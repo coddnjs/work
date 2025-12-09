@@ -24,7 +24,6 @@
   </header>
 
   <main class="grid">
-
     <!-- 캘린더 -->
     <section>
       <div class="cal-card">
@@ -40,7 +39,6 @@
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
-
         <div class="selected-date" id="selectedDateBox">선택된 날짜 없음</div>
 
         <div class="field">
@@ -83,12 +81,35 @@
         <h3>이번 달 총 근무시간</h3>
         <div id="monthTotal" class="month-total">00:00:00</div>
       </div>
-
     </aside>
   </main>
 </div>
 
-<!-- Firebase + script.js -->
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
+    authDomain: "work-3aad3.firebaseapp.com",
+    projectId: "work-3aad3",
+    storageBucket: "work-3aad3.appspot.com",
+    messagingSenderId: "225615907016",
+    appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 모든 변수 전역에 등록
+  window.db = db;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDoc = getDoc;
+  window.deleteDoc = deleteDoc;
+</script>
+
 <script type="module" src="script.js"></script>
 </body>
 </html>
