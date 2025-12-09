@@ -22,10 +22,8 @@
     </div>
   </header>
 
-  <div id="notification" class="notification" style="display:none;">
-    <span id="notifMessage"></span>
-    <button id="reloginBtn" style="display:none;">다시 로그인</button>
-  </div>
+  <!-- 상태 메시지 -->
+  <div id="statusBox" class="status-box"></div>
 
   <main class="grid">
     <!-- 캘린더 -->
@@ -42,7 +40,7 @@
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
-        <div class="selected-date" id="selectedDateBox">선택된 날짜 없음</div>
+        <div class="selected-date" id="selectedDateBox">선택된 날짜</div>
 
         <div class="field">
           <label>출근</label>
@@ -73,7 +71,6 @@
           <button id="delete" class="btn-ghost">삭제</button>
         </div>
 
-        <div class="foot-note"> 입력 예시: 093000, 18:20:55 등 모두 가능 </div>
       </div>
 
       <div class="card">
@@ -84,6 +81,7 @@
   </main>
 </div>
 
+<!-- Firebase + script.js -->
 <script type="module" src="script.js"></script>
 </body>
 </html>
