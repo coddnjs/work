@@ -1,22 +1,5 @@
-// Firebase SDK import (Firestore만)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { db, doc, setDoc, getDoc, deleteDoc } from './index.html';
 
-// Firebase 설정
-const firebaseConfig = {
-  apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
-  authDomain: "work-3aad3.firebaseapp.com",
-  projectId: "work-3aad3",
-  storageBucket: "work-3aad3.appspot.com",
-  messagingSenderId: "225615907016",
-  appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
-};
-
-// Firebase 초기화
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// DOM 요소
 const calendar = document.getElementById("calendar");
 const monthTitle = document.getElementById("monthTitle");
 const selectedBox = document.getElementById("selectedDateBox");
@@ -45,35 +28,105 @@ function format(sec){
   const s=sec%60;
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
-function parse(t){
+function parseTime(t){
   if(!t) return 0;
-  t=t.replace(/[^0-9:]/g,"").trim();
+  t = t.replace(/[^0-9:]/g,"").trim();
   if(t.includes(":")){
     const [h,m,s]=t.split(":").map(Number);
-    return h*3600+m*60+(s||0);
+    return h*3600 + m*60 + (s||0);
   }
   t=t.padStart(6,"0");
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore에서 데이터 로드
-async function loadDB() {
-  const iso = selected.toISOString().slice(0,10);
-  const docSnap = await getDoc(doc(db, "worklog", iso));
-  if (docSnap.exists()) return docSnap.data();
-  return null;
+// Firestore에서 불러오기
+async function loadDB(){
+  const docRef = doc(db, "worklog", "all");
+  const snapshot = await getDoc(docRef);
+  return snapshot.exists() ? snapshot.data() : {};
 }
 
 // Firestore에 저장
-async function saveDB() {
+async function saveDB(date, data){
+  const docRef = doc(db, "worklog", date);
+  await setDoc(docRef, data);
+}
+
+// 선택 날짜 처리
+async function selectDate(d){
+  selected = d;
+  const iso = d.toISOString().slice(0,10);
+  selectedBox.textContent = iso;
+
+  const dbData = await loadDB();
+  const dayData = dbData[iso] || {};
+
+  startInput.value = dayData.start || "";
+  endInput.value = dayData.end || "";
+  memoInput.value = dayData.memo || "";
+  if(dayData.break){
+    breakCheck.checked = true;
+    breakWrap.style.display="block";
+    breakInput.value = dayData.break;
+  } else {
+    breakCheck.checked = false;
+    breakWrap.style.display="none";
+    breakInput.value="";
+  }
+
+  renderCalendar();
+  renderSelected(dayData);
+}
+
+function renderSelected(data){
   const iso = selected.toISOString().slice(0,10);
-  const s = parse(startInput.value);
-  const e = parse(endInput.value);
-  const b = parse(breakInput.value);
-  if (e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
+  const box = document.getElementById("selectedEntry");
+  box.innerHTML = data ? `
+    <div class="entry-card">
+      <div class="entry-time">${iso} (${data.time})</div>
+      <div class="entry-memo">${data.memo||""}</div>
+    </div>` : `<div class="entry-card record-none">기록 없음</div>`;
+}
+
+// 달력 렌더링
+async function renderCalendar(){
+  calendar.innerHTML="";
+  const y=current.getFullYear();
+  const m=current.getMonth();
+  monthTitle.textContent=`${y}년 ${m+1}월`;
+  const first=new Date(y,m,1).getDay();
+  const last=new Date(y,m+1,0).getDate();
+
+  const dbData = await loadDB();
+
+  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
+
+  for(let d=1; d<=last; d++){
+    const iso = `${y}-${pad(m+1)}-${pad(d)}`;
+    const box = document.createElement("div");
+    box.className="day";
+    box.innerHTML = `<span>${d}</span>`;
+    if(iso === selected.toISOString().slice(0,10)) box.classList.add("selected");
+    if(dbData[iso]) box.innerHTML += `<div class="preview">${dbData[iso].time}</div>`;
+
+    const weekday = (first + d - 1) % 7;
+    if(weekday === 0) box.querySelector("span").style.color = "#d64545";
+    if(weekday === 6) box.querySelector("span").style.color = "#3b66d6";
+
+    box.onclick = ()=> selectDate(new Date(iso));
+    calendar.appendChild(box);
+  }
+}
+
+saveBtn.onclick = async ()=>{
+  const iso = selected.toISOString().slice(0,10);
+  const s = parseTime(startInput.value);
+  const e = parseTime(endInput.value);
+  const b = parseTime(breakInput.value);
+  if(e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
   const total = e - s - b;
 
-  await setDoc(doc(db, "worklog", iso), {
+  await saveDB(iso, {
     start: startInput.value,
     end: endInput.value,
     break: breakCheck.checked ? breakInput.value : "",
@@ -84,80 +137,18 @@ async function saveDB() {
 
   alert("저장됨!");
   renderCalendar();
-  renderSelected();
-  calcMonthTotal();
-}
+  selectDate(selected);
+};
 
-// 캘린더, 선택된 날짜, 총 근무시간 렌더링
-function selectDate(d){ selected = d; renderSelected(); renderCalendar(); calcMonthTotal(); }
-
-function renderSelected() {
-  const iso = selected.toISOString().slice(0,10);
-  loadDB().then(dbEntry => {
-    const box = document.getElementById("selectedEntry");
-    box.innerHTML = "";
-    if (!dbEntry) {
-      box.innerHTML = `<div class="entry-card record-none">기록 없음</div>`;
-      return;
-    }
-    box.innerHTML = `
-      <div class="entry-card">
-        <div class="entry-time">${iso} (${dbEntry.time})</div>
-        <div class="entry-memo">${dbEntry.memo||""}</div>
-      </div>
-    `;
-    startInput.value = dbEntry.start || "";
-    endInput.value = dbEntry.end || "";
-    memoInput.value = dbEntry.memo || "";
-    if(dbEntry.break){
-      breakCheck.checked=true;
-      breakWrap.style.display="block";
-      breakInput.value=dbEntry.break;
-    } else {
-      breakCheck.checked=false;
-      breakWrap.style.display="none";
-      breakInput.value="";
-    }
-  });
-}
-
-function renderCalendar(){
-  calendar.innerHTML="";
-  const y=current.getFullYear();
-  const m=current.getMonth();
-  monthTitle.textContent=`${y}년 ${m+1}월`;
-  const first=new Date(y,m,1).getDay();
-  const last=new Date(y,m+1,0).getDate();
-
-  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
-
-  for(let d=1;d<=last;d++){
-    const iso=`${y}-${pad(m+1)}-${pad(d)}`;
-    const box=document.createElement("div");
-    box.className="day";
-    box.innerHTML=`<span>${d}</span>`;
-    if(iso===selected.toISOString().slice(0,10)) box.classList.add("selected");
-    box.onclick=()=>selectDate(new Date(iso));
-    calendar.appendChild(box);
-  }
-}
-
-function calcMonthTotal(){
-  let sum=0;
-  const y=current.getFullYear();
-  const m=current.getMonth()+1;
-  loadDB().then(dbEntry=>{
-    if(dbEntry?.sec) sum += dbEntry.sec;
-    monthTotal.textContent=format(sum);
-  });
-}
-
-// 버튼 이벤트
-saveBtn.onclick = saveDB;
-document.getElementById("prevMonth").onclick=()=>{current.setMonth(current.getMonth()-1); renderCalendar(); calcMonthTotal();}
-document.getElementById("nextMonth").onclick=()=>{current.setMonth(current.getMonth()+1); renderCalendar(); calcMonthTotal();}
+document.getElementById("prevMonth").onclick = ()=>{
+  current.setMonth(current.getMonth()-1);
+  renderCalendar();
+};
+document.getElementById("nextMonth").onclick = ()=>{
+  current.setMonth(current.getMonth()+1);
+  renderCalendar();
+};
 
 // 초기화
 renderCalendar();
 selectDate(new Date());
-calcMonthTotal();
