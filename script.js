@@ -1,23 +1,18 @@
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // 🔹 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
   authDomain: "work-3aad3.firebaseapp.com",
   projectId: "work-3aad3",
-  storageBucket: "work-3aad3.appspot.com", // Storage 사용 안 함
+  storageBucket: "work-3aad3.appspot.com",
   messagingSenderId: "225615907016",
   appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
 };
 
-// 🔹 Firebase 초기화 (중복 방지)
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+// 🔹 Firebase 초기화
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // DOM Elements
@@ -42,7 +37,7 @@ breakCheck.onclick = () => {
   if (!breakCheck.checked) breakInput.value = "";
 };
 
-// 시간 계산
+// 🟢 시간 계산
 function pad(n){return String(n).padStart(2,"0");}
 function format(sec){
   const h=Math.floor(sec/3600);
@@ -68,7 +63,7 @@ async function load(iso){
   return docSnap.exists() ? docSnap.data() : null;
 }
 
-// 선택 날짜
+// 🔹 선택 날짜
 async function selectDate(d){
   selected=d;
   const iso=d.toISOString().slice(0,10);
@@ -111,7 +106,7 @@ function renderSelected(dbEntry){
   `;
 }
 
-// 달력 렌더링
+// 🔹 달력 렌더링
 async function renderCalendar(){
   calendar.innerHTML = "";
   const y = current.getFullYear();
@@ -153,7 +148,6 @@ async function renderCalendar(){
   }
 }
 
-
 // 저장
 saveBtn.onclick = async () => {
   const iso = selected.toISOString().slice(0, 10);
@@ -180,7 +174,7 @@ saveBtn.onclick = async () => {
   calcMonthTotal();
 };
 
-// 삭제
+// 🔹 삭제
 delBtn.onclick = async () => {
   const iso = selected.toISOString().slice(0,10);
   await deleteDoc(doc(db,"worklog",iso));
@@ -189,12 +183,13 @@ delBtn.onclick = async () => {
   calcMonthTotal();
 };
 
-// 이번 달 총 근무시간
+// 🔹 이번 달 총 근무시간
 async function calcMonthTotal(){
   const y=current.getFullYear();
   const m=current.getMonth()+1;
   let sum = 0;
 
+  // Firestore에서 월 전체 데이터 조회
   const q = query(collection(db,"worklog"));
   const querySnapshot = await getDocs(q);
   querySnapshot.forEach(docSnap=>{
