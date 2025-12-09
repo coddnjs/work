@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getFirestore, doc, getDocs, setDoc, deleteDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-// Firebase config
+// Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
   authDomain: "work-3aad3.firebaseapp.com",
@@ -20,7 +20,7 @@ let selectedDate = null;
 let cachedData = {};
 let currentUser = null;
 
-// UI 요소
+// DOM 요소
 const calendarEl = document.getElementById('calendar');
 const monthTitleEl = document.getElementById('monthTitle');
 const prevMonthBtn = document.getElementById('prevMonth');
@@ -33,94 +33,91 @@ const breakTimeInput = document.getElementById('breakTime');
 const memoInput = document.getElementById('memo');
 const saveBtn = document.getElementById('save');
 const deleteBtn = document.getElementById('delete');
-const weekTotalEl = document.getElementById('weekTotal'); // 올바른 id
+const weekTotalEl = document.getElementById('weekTotal');
 
 // 상태 메시지
 const statusBox = document.createElement('div');
 statusBox.className = 'status-box';
-calendarEl.parentElement.insertBefore(statusBox, calendarEl);
+if(calendarEl && calendarEl.parentElement) calendarEl.parentElement.insertBefore(statusBox, calendarEl);
 
-// 달력 관련
 let currentYear, currentMonth;
 
-function formatDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+// 날짜 포맷
+function formatDate(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
 }
 
-function renderCalendar() {
-  if (!calendarEl) return; // 안전장치
-  calendarEl.innerHTML = '';
-  const firstDay = new Date(currentYear, currentMonth, 1);
-  const lastDay = new Date(currentYear, currentMonth + 1, 0);
+// 캘린더 렌더링
+function renderCalendar(){
+  if(!calendarEl) return;
+  calendarEl.innerHTML='';
+  const firstDay = new Date(currentYear, currentMonth,1);
+  const lastDay = new Date(currentYear, currentMonth+1,0);
   const startWeekDay = firstDay.getDay();
   const totalDays = lastDay.getDate();
 
-  // 빈 칸
-  for (let i = 0; i < startWeekDay; i++) {
+  for(let i=0;i<startWeekDay;i++){
     const emptyCell = document.createElement('div');
     calendarEl.appendChild(emptyCell);
   }
 
-  for (let i = 1; i <= totalDays; i++) {
-    const dateObj = new Date(currentYear, currentMonth, i);
+  for(let i=1;i<=totalDays;i++){
+    const dateObj = new Date(currentYear,currentMonth,i);
     const cell = document.createElement('div');
-    cell.className = 'day-cell';
-    if (dateObj.toDateString() === new Date().toDateString()) cell.classList.add('today');
-
+    cell.className='day-cell';
+    if(dateObj.toDateString()===new Date().toDateString()) cell.classList.add('today');
     cell.dataset.date = formatDate(dateObj);
-    cell.innerHTML = `<div>${i}</div>`;
+    cell.innerHTML=`<div>${i}</div>`;
 
     const cached = cachedData[cell.dataset.date];
     const workDiv = document.createElement('div');
-    workDiv.className = 'worktime';
-    if (cached && cached.start && cached.end) {
+    workDiv.className='worktime';
+    if(cached && cached.start && cached.end){
       workDiv.textContent = calculateWorkTime(cached.start, cached.end, cached.break);
     }
     cell.appendChild(workDiv);
-
-    cell.onclick = () => selectDate(cell.dataset.date);
+    cell.onclick = ()=>selectDate(cell.dataset.date);
     calendarEl.appendChild(cell);
   }
 
-  if(monthTitleEl) monthTitleEl.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+  if(monthTitleEl) monthTitleEl.textContent=`${currentYear}년 ${currentMonth+1}월`;
 }
 
 // 근무시간 계산
-function calculateWorkTime(start, end, breakTime='000000') {
-  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)), parseInt(s.slice(2,4)), parseInt(s.slice(4,6))];
-  let [sh, sm, ss] = parseHMS(start);
-  let [eh, em, es] = parseHMS(end);
-  let [bh, bm, bs] = parseHMS(breakTime);
+function calculateWorkTime(start,end,breakTime='000000'){
+  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
+  let [sh,sm,ss]=parseHMS(start);
+  let [eh,em,es]=parseHMS(end);
+  let [bh,bm,bs]=parseHMS(breakTime);
 
-  let totalSec = (eh*3600 + em*60 + es) - (sh*3600 + sm*60 + ss) - (bh*3600 + bm*60 + bs);
-  if (totalSec < 0) totalSec = 0;
+  let totalSec=(eh*3600+em*60+es)-(sh*3600+sm*60+ss)-(bh*3600+bm*60+bs);
+  if(totalSec<0) totalSec=0;
 
-  const h = String(Math.floor(totalSec/3600)).padStart(2,'0');
-  const m = String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
-  const s = String(totalSec%60).padStart(2,'0');
+  const h=String(Math.floor(totalSec/3600)).padStart(2,'0');
+  const m=String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
+  const s=String(totalSec%60).padStart(2,'0');
   return `${h}:${m}:${s}`;
 }
 
 // 날짜 선택
-function selectDate(date) {
-  selectedDate = date;
-  if(selectedDateBox) selectedDateBox.textContent = date;
+function selectDate(date){
+  selectedDate=date;
+  if(selectedDateBox) selectedDateBox.textContent=date;
   const data = cachedData[date] || {};
-  startTimeInput.value = data.start || '';
-  endTimeInput.value = data.end || '';
+  startTimeInput.value = data.start||'';
+  endTimeInput.value = data.end||'';
   breakCheck.checked = data.break?true:false;
   breakTimeInput.style.display = breakCheck.checked?'block':'none';
-  breakTimeInput.value = data.break || '';
-  memoInput.value = data.memo || '';
-
+  breakTimeInput.value = data.break||'';
+  memoInput.value = data.memo||'';
   updateWeekTotal(date);
 }
 
-// 주 총근무시간
-function updateWeekTotal(dateStr) {
+// 이번주 총 근무시간 계산
+function updateWeekTotal(dateStr){
   if(!weekTotalEl) return;
   const d = new Date(dateStr);
   const dayOfWeek = d.getDay();
@@ -128,69 +125,64 @@ function updateWeekTotal(dateStr) {
   const saturday = new Date(d); saturday.setDate(d.getDate()+(6-dayOfWeek));
 
   let totalSec = 0;
-  for (let key in cachedData) {
+  for(let key in cachedData){
     const kd = new Date(key);
-    if(kd >= sunday && kd <= saturday){
+    if(kd>=sunday && kd<=saturday){
       const c = cachedData[key];
-      if(c.start && c.end) totalSec += parseTimeSec(c.start, c.end, c.break);
+      if(c.start && c.end) totalSec += parseTimeSec(c.start,c.end,c.break);
     }
   }
 
-  const h = String(Math.floor(totalSec/3600)).padStart(2,'0');
-  const m = String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
-  const s = String(totalSec%60).padStart(2,'0');
+  const h=String(Math.floor(totalSec/3600)).padStart(2,'0');
+  const m=String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
+  const s=String(totalSec%60).padStart(2,'0');
   weekTotalEl.textContent = `${h}:${m}:${s}`;
 }
 
-function parseTimeSec(start, end, breakTime='000000'){
-  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)), parseInt(s.slice(2,4)), parseInt(s.slice(4,6))];
-  let [sh, sm, ss] = parseHMS(start);
-  let [eh, em, es] = parseHMS(end);
-  let [bh, bm, bs] = parseHMS(breakTime);
-  let totalSec = (eh*3600 + em*60 + es) - (sh*3600 + sm*60 + ss) - (bh*3600 + bm*60 + bs);
-  return totalSec>0 ? totalSec : 0;
+function parseTimeSec(start,end,breakTime='000000'){
+  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
+  let [sh,sm,ss]=parseHMS(start);
+  let [eh,em,es]=parseHMS(end);
+  let [bh,bm,bs]=parseHMS(breakTime);
+  let totalSec=(eh*3600+em*60+es)-(sh*3600+sm*60+ss)-(bh*3600+bm*60+bs);
+  return totalSec>0?totalSec:0;
 }
 
-// Firestore 데이터 불러오기
-async function loadMonthData() {
-  if (!currentUser) return;
+// Firestore 데이터 로드
+async function loadMonthData(){
+  if(!currentUser) return;
   statusBox.style.display='block';
   statusBox.textContent='데이터 불러오는 중...';
-  cachedData = {};
-  try {
-    const q = query(collection(db,'workRecords'), where('uid','==',currentUser.uid));
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach(docSnap => {
-      const d = docSnap.data();
-      cachedData[d.date] = {start:d.start, end:d.end, break:d.break, memo:d.memo};
+  cachedData={};
+  try{
+    const q = query(collection(db,'workRecords'),where('uid','==',currentUser.uid));
+    const snapshot = await getDocs(q);
+    snapshot.forEach(docSnap=>{
+      const d=docSnap.data();
+      cachedData[d.date] = {start:d.start,end:d.end,break:d.break,memo:d.memo};
     });
     statusBox.style.display='none';
     renderCalendar();
     if(selectedDate) selectDate(selectedDate);
   } catch(e){
-    console.error('Firestore 접근 실패:', e);
-    statusBox.textContent='데이터 불러오기 실패. 다시 로그인 필요';
-    statusBox.style.display='block';
-    const relogBtn = document.createElement('button');
-    relogBtn.textContent='다시 로그인';
-    relogBtn.onclick=()=>signIn();
-    statusBox.appendChild(relogBtn);
+    console.error('Firestore 접근 실패',e);
+    statusBox.textContent='데이터 불러오기 실패';
   }
 }
 
 // 저장
-async function saveData() {
-  if(!currentUser || !selectedDate) return;
+async function saveData(){
+  if(!currentUser||!selectedDate) return;
   statusBox.style.display='block';
   statusBox.textContent='저장 중...';
-  try {
+  try{
     await setDoc(doc(db,'workRecords',`${currentUser.uid}_${selectedDate}`),{
-      uid: currentUser.uid,
-      date: selectedDate,
-      start: startTimeInput.value,
-      end: endTimeInput.value,
-      break: breakCheck.checked?breakTimeInput.value:'',
-      memo: memoInput.value
+      uid:currentUser.uid,
+      date:selectedDate,
+      start:startTimeInput.value,
+      end:endTimeInput.value,
+      break:breakCheck.checked?breakTimeInput.value:'',
+      memo:memoInput.value
     });
     await loadMonthData();
     statusBox.textContent='저장 완료';
@@ -198,22 +190,22 @@ async function saveData() {
 }
 
 // 삭제
-async function deleteData() {
-  if(!currentUser || !selectedDate) return;
+async function deleteData(){
+  if(!currentUser||!selectedDate) return;
   statusBox.style.display='block';
   statusBox.textContent='삭제 중...';
-  try {
+  try{
     await deleteDoc(doc(db,'workRecords',`${currentUser.uid}_${selectedDate}`));
     await loadMonthData();
     statusBox.textContent='삭제 완료';
   } catch(e){ console.error(e); statusBox.textContent='삭제 실패'; }
 }
 
-// 구글 로그인
-async function signIn() {
-  const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
+// Google 로그인
+async function signIn(){
+  const provider=new GoogleAuthProvider();
+  try{
+    const result = await signInWithPopup(auth,provider);
     currentUser = result.user;
     await loadMonthData();
   } catch(e){ console.error(e); alert('로그인 실패'); }
@@ -221,18 +213,18 @@ async function signIn() {
 
 // 초기화
 function init(){
-  const today = new Date();
+  const today=new Date();
   currentYear = today.getFullYear();
   currentMonth = today.getMonth();
 
-  prevMonthBtn.onclick = ()=>{ currentMonth--; if(currentMonth<0){currentMonth=11; currentYear--;} loadMonthData(); renderCalendar(); };
-  nextMonthBtn.onclick = ()=>{ currentMonth++; if(currentMonth>11){currentMonth=0; currentYear++;} loadMonthData(); renderCalendar(); };
+  if(prevMonthBtn) prevMonthBtn.onclick = ()=>{ currentMonth--; if(currentMonth<0){currentMonth=11; currentYear--;} loadMonthData(); renderCalendar(); };
+  if(nextMonthBtn) nextMonthBtn.onclick = ()=>{ currentMonth++; if(currentMonth>11){currentMonth=0; currentYear++;} loadMonthData(); renderCalendar(); };
 
-  saveBtn.onclick = saveData;
-  deleteBtn.onclick = deleteData;
-  breakCheck.onchange = ()=>{ breakTimeInput.style.display=breakCheck.checked?'block':'none'; };
+  if(saveBtn) saveBtn.onclick = saveData;
+  if(deleteBtn) deleteBtn.onclick = deleteData;
+  if(breakCheck) breakCheck.onchange = ()=>{ breakTimeInput.style.display = breakCheck.checked?'block':'none'; };
 
-  onAuthStateChanged(auth,(user)=>{
+  onAuthStateChanged(auth,user=>{
     if(user){ currentUser=user; loadMonthData(); }
     else signIn();
   });
