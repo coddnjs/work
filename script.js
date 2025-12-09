@@ -55,7 +55,7 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// 데이터 로드
+// 한 날 데이터 로드
 async function loadDayData(date){
   const iso = date.toISOString().slice(0,10);
   try{
@@ -76,6 +76,26 @@ async function loadDayData(date){
     calendarError.textContent = "데이터 불러오기 실패!";
     reLoginBtn.style.display = "inline-block";
     return null;
+  }
+}
+
+// 한 달 데이터 로드
+async function loadMonthData(year, month){
+  try{
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month+1, 0);
+    const snap = await getDocs(collection(db,"worklog"));
+    snap.forEach(doc => {
+      const iso = doc.id; // Firestore 문서 ID가 yyyy-mm-dd 형식이라고 가정
+      const d = new Date(iso);
+      if(d >= start && d <= end){
+        monthDataCache[iso] = doc.data();
+      }
+    });
+  }catch(e){
+    console.error("월 데이터 로드 실패:", e);
+    calendarError.style.display = "block";
+    calendarError.textContent = "월 데이터 불러오기 실패!";
   }
 }
 
@@ -201,6 +221,7 @@ saveBtn.onclick = async ()=>{
   saveBtn.textContent = "저장";
 
   await loadDayData(selected);
+  await loadMonthData(current.getFullYear(), current.getMonth()); // 달력용 데이터 다시 로드
   renderCalendar();
   renderSelected();
 };
@@ -214,12 +235,14 @@ delBtn.onclick = async ()=>{
 };
 
 // 이전/다음 달
-document.getElementById("prevMonth").onclick = ()=> {
+document.getElementById("prevMonth").onclick = async ()=> {
   current.setMonth(current.getMonth()-1);
+  await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
 };
-document.getElementById("nextMonth").onclick = ()=> {
+document.getElementById("nextMonth").onclick = async ()=> {
   current.setMonth(current.getMonth()+1);
+  await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
 };
 
@@ -229,8 +252,7 @@ reLoginBtn.onclick = ()=> signOut(auth).then(()=> location.reload());
 // 초기
 onAuthStateChanged(auth, async user => {
   if(user){
-    // 새로고침 시 해당 날짜 데이터 로드 후 렌더
-    await loadDayData(selected);
+    await loadMonthData(current.getFullYear(), current.getMonth());
     renderCalendar();
     renderSelected();
   } else {
