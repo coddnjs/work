@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>근무 기록</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="wrap">
+
+  <header class="topbar">
+    <div>
+      <h1>근무 기록</h1>
+      <p class="lead">출근·퇴근 시간을 입력하면 자동으로 근무시간이 계산됩니다.</p>
+    </div>
+
+    <div class="month-nav">
+      <button id="prevMonth" class="nav-btn">◀</button>
+      <div id="monthTitle" class="month-label"></div>
+      <button id="nextMonth" class="nav-btn">▶</button>
+    </div>
+  </header>
+
+
+  <main class="grid">
+
+    <section>
+      <div class="cal-card">
+        <div class="weekday-row">
+          <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+        </div>
+        <div id="calendar" class="days-grid"></div>
+        <div id="selectedEntry" class="selected-entry"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <h3>기록</h3>
+
+        <div class="selected-date" id="selectedDateBox">선택된 날짜 없음</div>
+
+        <div class="field">
+          <label>출근</label>
+          <input type="text" id="startTime" placeholder="예: 090000">
+        </div>
+
+        <div class="field">
+          <label>퇴근</label>
+          <input type="text" id="endTime" placeholder="예: 180000">
+        </div>
+
+        <div class="field checkbox">
+          <label for="breakCheck">외출</label>
+          <label class="toggle">
+            <input type="checkbox" id="breakCheck">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="field" id="breakInputWrap" style="display:none;">
+          <label>외출 시간</label>
+          <input type="text" id="breakTime" placeholder="예: 003000">
+        </div>
+
+        <div class="field">
+          <label>메모</label>
+          <textarea id="memo" placeholder="메모 (선택)"></textarea>
+        </div>
+
+        <div class="controls">
+          <button id="save" class="btn-primary">저장</button>
+          <button id="delete" class="btn-ghost">삭제</button>
+        </div>
+
+        <div class="foot-note"> 입력 예시: 093000, 18:20:55 등 모두 가능 </div>
+      </div>
+
+      <div class="card">
+        <h3>이번 달 총 근무시간</h3>
+        <div id="monthTotal" class="month-total">00:00:00</div>
+      </div>
+
+    </aside>
+  </main>
+</div>
+
+<!-- 🔥 Firebase를 먼저 로드 -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { 
+    getFirestore, doc, setDoc, getDoc, deleteDoc 
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
+    authDomain: "work-3aad3.firebaseapp.com",
+    projectId: "work-3aad3",
+    storageBucket: "work-3aad3.firebasestorage.app",
+    messagingSenderId: "225615907016",
+    appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // script.js에서 사용 가능하게 window에 붙여줌
+  window.db = db;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDoc = getDoc;
+  window.deleteDoc = deleteDoc;
+</script>
+
+<!-- 🔥 script.js는 반드시 module이어야 import 사용 가능 -->
+<script type="module" src="script.js"></script>
+
+</body>
+</html>
