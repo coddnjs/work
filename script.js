@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -29,9 +29,28 @@ const memoInput = document.getElementById("memo");
 const saveBtn = document.getElementById("save");
 const delBtn = document.getElementById("delete");
 const monthTotal = document.getElementById("monthTotal");
+const wrap = document.querySelector(".wrap"); // 전체 컨테이너 숨기기/보이기용
 
 let current = new Date();
 let selected = new Date();
+
+// 로그인 먼저
+async function loginAndInit(){
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("Google 로그인 성공:", result.user.email);
+
+    // 로그인 후 컨텐츠 표시
+    wrap.style.display = "block";
+    selectDate(new Date());
+    calcMonthTotal();
+
+  } catch(err){
+    console.error("로그인 실패:", err);
+    alert("로그인이 필요합니다.");
+    wrap.innerHTML = "<p>로그인이 필요합니다.</p>";
+  }
+}
 
 // 유틸
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -52,7 +71,7 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore 안전하게 접근
+// Firestore 접근
 async function loadDayData(date){
   try {
     const iso = date.toISOString().slice(0,10);
@@ -60,7 +79,7 @@ async function loadDayData(date){
     return snap.exists() ? snap.data() : null;
   } catch(err) {
     console.warn("Firestore 접근 실패:", err);
-    return null; // 실패해도 달력 렌더링
+    return null;
   }
 }
 
@@ -105,7 +124,7 @@ function renderSelected(){
   });
 }
 
-// 달력 렌더링 (Firestore 실패해도 DOM 표시)
+// 달력 렌더링
 function renderCalendar(){
   calendar.innerHTML="";
   const y=current.getFullYear();
@@ -151,15 +170,13 @@ saveBtn.onclick = async ()=>{
       sec: total
     });
 
-    saveBtn.classList.add("clicked");
-    setTimeout(()=>saveBtn.classList.remove("clicked"),200);
     alert("저장되었습니다!");
     renderCalendar();
     renderSelected();
     calcMonthTotal();
   } catch(err){
     console.error("저장 실패:", err);
-    alert("저장 중 오류가 발생했습니다. 로그인 상태를 확인하세요.");
+    alert("저장 중 오류가 발생했습니다.");
   }
 };
 
@@ -174,7 +191,7 @@ delBtn.onclick = async ()=>{
     calcMonthTotal();
   } catch(err){
     console.error("삭제 실패:", err);
-    alert("삭제 중 오류가 발생했습니다. 로그인 상태를 확인하세요.");
+    alert("삭제 중 오류가 발생했습니다.");
   }
 };
 
@@ -208,24 +225,6 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 🔹 Google 로그인 상태 확인 후 초기화
-onAuthStateChanged(auth, user => {
-  if(user){
-    console.log("로그인 상태 확인:", user.email);
-    selectDate(new Date());
-    calcMonthTotal();
-  } else {
-    signInWithPopup(auth, provider)
-      .then(result => {
-        console.log("Google 로그인 성공:", result.user.email);
-        selectDate(new Date());
-        calcMonthTotal();
-      })
-      .catch(err => {
-        console.error("로그인 실패:", err);
-        alert("로그인이 필요합니다.");
-        // 로그인 실패 시 달력만 표시
-        renderCalendar();
-      });
-  }
-});
+// 🔹 초기 화면 숨기기, 로그인 후 표시
+wrap.style.display = "none";
+loginAndInit();
