@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebas
 import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
+// Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
   authDomain: "work-3aad3.firebaseapp.com",
@@ -19,6 +20,7 @@ let selectedDate = null;
 let cachedData = {};
 let currentUser = null;
 
+// UI 요소
 const calendarEl = document.getElementById('calendar');
 const monthTitleEl = document.getElementById('monthTitle');
 const prevMonthBtn = document.getElementById('prevMonth');
@@ -36,6 +38,7 @@ const statusBox = document.getElementById('statusBox');
 
 let currentYear, currentMonth;
 
+// 날짜 포맷
 function formatDate(d){
   const y=d.getFullYear();
   const m=String(d.getMonth()+1).padStart(2,'0');
@@ -43,6 +46,26 @@ function formatDate(d){
   return `${y}-${m}-${day}`;
 }
 
+// 초 단위 계산
+function parseTimeSec(start,end,breakTime='000000'){
+  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
+  let [sh,sm,ss]=parseHMS(start);
+  let [eh,em,es]=parseHMS(end);
+  let [bh,bm,bs]=parseHMS(breakTime);
+  let totalSec = (eh*3600+em*60+es)-(sh*3600+sm*60+ss)-(bh*3600+bm*60+bs);
+  return totalSec>0?totalSec:0;
+}
+
+// 근무시간 계산
+function calculateWorkTime(start,end,breakTime='000000'){
+  let totalSec = parseTimeSec(start,end,breakTime);
+  const h=String(Math.floor(totalSec/3600)).padStart(2,'0');
+  const m=String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
+  const s=String(totalSec%60).padStart(2,'0');
+  return `${h}:${m}:${s}`;
+}
+
+// 캘린더 렌더링
 function renderCalendar(){
   calendarEl.innerHTML='';
 
@@ -51,8 +74,10 @@ function renderCalendar(){
   const startWeekDay = firstDay.getDay();
   const totalDays = lastDay.getDate();
 
+  // 빈칸 채우기
   for(let i=0;i<startWeekDay;i++){
     const emptyCell=document.createElement('div');
+    emptyCell.className='day empty';
     calendarEl.appendChild(emptyCell);
   }
 
@@ -67,9 +92,12 @@ function renderCalendar(){
 
     const cached = cachedData[cell.dataset.date];
     const workDiv = document.createElement('div');
-    workDiv.className='preview';
     if(cached && cached.start && cached.end){
+      workDiv.className='preview';
       workDiv.textContent = calculateWorkTime(cached.start,cached.end,cached.break);
+    }else{
+      workDiv.className='record-none';
+      workDiv.textContent='기록 없음';
     }
     cell.appendChild(workDiv);
 
@@ -85,21 +113,7 @@ function renderCalendar(){
   monthTitleEl.textContent = `${currentYear}년 ${currentMonth+1}월`;
 }
 
-function calculateWorkTime(start,end,breakTime='000000'){
-  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
-  let [sh,sm,ss] = parseHMS(start);
-  let [eh,em,es] = parseHMS(end);
-  let [bh,bm,bs] = parseHMS(breakTime);
-
-  let totalSec = (eh*3600+em*60+es) - (sh*3600+sm*60+ss) - (bh*3600+bm*60+bs);
-  if(totalSec<0) totalSec=0;
-
-  const h=String(Math.floor(totalSec/3600)).padStart(2,'0');
-  const m=String(Math.floor((totalSec%3600)/60).padStart(2,'0'));
-  const s=String(totalSec%60).padStart(2,'0');
-  return `${h}:${m}:${s}`;
-}
-
+// 날짜 선택
 function selectDate(date){
   selectedDate = date;
   selectedDateBox.textContent = date;
@@ -113,17 +127,7 @@ function selectDate(date){
   updateWeekTotal(date);
 }
 
-function parseTimeSec(start,end,breakTime='000000'){
-  const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
-  let [sh,sm,ss] = parseHMS(start);
-  let [eh,em,es] = parseHMS(end);
-  let [bh,bm,bs] = parseHMS(breakTime);
-
-  let totalSec = (eh*3600+em*60+es) - (sh*3600+sm*60+ss) - (bh*3600+bm*60+bs);
-  if(totalSec<0) totalSec=0;
-  return totalSec;
-}
-
+// 선택 주 총 근무시간
 function updateWeekTotal(dateStr){
   const d = new Date(dateStr);
   const dayOfWeek = d.getDay();
@@ -145,6 +149,7 @@ function updateWeekTotal(dateStr){
   weekTotalEl.textContent=`${h}:${m}:${s}`;
 }
 
+// Firestore에서 데이터 불러오기
 async function loadMonthData(){
   if(!currentUser) return;
   statusBox.style.display='block';
@@ -166,6 +171,7 @@ async function loadMonthData(){
   }
 }
 
+// 저장
 async function saveData(){
   if(!currentUser||!selectedDate) return;
   statusBox.style.display='block';
@@ -187,6 +193,7 @@ async function saveData(){
   }
 }
 
+// 삭제
 async function deleteData(){
   if(!currentUser||!selectedDate) return;
   statusBox.style.display='block';
@@ -201,6 +208,7 @@ async function deleteData(){
   }
 }
 
+// 구글 로그인
 async function signIn(){
   const provider = new GoogleAuthProvider();
   try{
@@ -213,6 +221,7 @@ async function signIn(){
   }
 }
 
+// 초기화
 function init(){
   const today = new Date();
   currentYear=today.getFullYear();
