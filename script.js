@@ -33,7 +33,7 @@ const breakTimeInput = document.getElementById('breakTime');
 const memoInput = document.getElementById('memo');
 const saveBtn = document.getElementById('save');
 const deleteBtn = document.getElementById('delete');
-const weekTotalEl = document.getElementById('monthTotal'); // 이름은 그대로지만 이번주 총근무시간으로 활용
+const weekTotalEl = document.getElementById('weekTotal'); // 이름은 그대로지만 이번주 총근무시간으로 활용
 const statusBox = document.createElement('div');
 
 statusBox.className = 'status-box';
