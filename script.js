@@ -86,7 +86,7 @@ async function loadMonthData(year, month){
     const end = new Date(year, month+1, 0);
     const snap = await getDocs(collection(db,"worklog"));
     snap.forEach(doc => {
-      const iso = doc.id; // Firestore 문서 ID가 yyyy-mm-dd 형식이라고 가정
+      const iso = doc.id;
       const d = new Date(iso);
       if(d >= start && d <= end){
         monthDataCache[iso] = doc.data();
@@ -104,6 +104,7 @@ async function renderSelected(){
   selectedBox.textContent = selected.toISOString().slice(0,10);
   await loadDayData(selected);
   const data = monthDataCache[selected.toISOString().slice(0,10)];
+
   startInput.value = data?.start || "";
   endInput.value = data?.end || "";
   memoInput.value = data?.memo || "";
@@ -120,20 +121,41 @@ async function renderSelected(){
 
   // 하단 기록 표시
   if(data){
-    selectedEntry.innerHTML = `
-      <div class="entry-card">
-        <div class="entry-time">출근: ${data.start} | 퇴근: ${data.end} | 외출: ${data.break || '없음'} | 총 근무시간: ${data.time}</div>
-        <div class="entry-memo">${data.memo || '메모 없음'}</div>
+  const startTime = `${data.start.slice(0,2)}:${data.start.slice(2,4)}:${data.start.slice(4,6)}`;
+  const endTime = `${data.end.slice(0,2)}:${data.end.slice(2,4)}:${data.end.slice(4,6)}`;
+  const isoDate = selected.toISOString().slice(0,10);
+
+  selectedEntry.innerHTML = `
+    <div class="entry-card">
+      <div class="entry-date" style="font-size:12px; font-weight:300; color:#888; margin-bottom:4px;">
+        ${isoDate}
       </div>
-    `;
-  } else {
-    selectedEntry.innerHTML = `<div class="record-none">선택한 날짜에 기록이 없습니다.</div>`;
-  }
+      <div class="entry-time" style="font-size:13px; font-weight:400; color:#555;">
+        ${startTime} - ${endTime} (${data.break ? '외출 '+data.break : '외출 없음'}) | 총 근무시간: ${data.time}
+      </div>
+      <div class="entry-memo">${data.memo || '메모 없음'}</div>
+    </div>
+  `;
+} else {
+  selectedEntry.innerHTML = `<div class="record-none">선택한 날짜에 기록이 없습니다.</div>`;
+}
+
 }
 
 // 캘린더 렌더링
 function renderCalendar(){
   calendar.innerHTML="";
+
+  // 요일 표시
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "weekday-row";
+  ["일","월","화","수","목","금","토"].forEach(w => {
+    const d = document.createElement("div");
+    d.textContent = w;
+    weekdayRow.appendChild(d);
+  });
+  calendar.appendChild(weekdayRow);
+
   const y = current.getFullYear();
   const m = current.getMonth();
   monthTitle.textContent = `${y}년 ${m+1}월`;
@@ -141,7 +163,10 @@ function renderCalendar(){
   const first = new Date(y,m,1).getDay();
   const last = new Date(y,m+1,0).getDate();
 
-  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
+  for(let i=0;i<first;i++){
+    const empty = document.createElement("div");
+    calendar.appendChild(empty);
+  }
 
   for(let d=1; d<=last; d++){
     const iso = `${y}-${pad(m+1)}-${pad(d)}`;
@@ -221,7 +246,7 @@ saveBtn.onclick = async ()=>{
   saveBtn.textContent = "저장";
 
   await loadDayData(selected);
-  await loadMonthData(current.getFullYear(), current.getMonth()); // 달력용 데이터 다시 로드
+  await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
   renderSelected();
 };
@@ -235,12 +260,12 @@ delBtn.onclick = async ()=>{
 };
 
 // 이전/다음 달
-document.getElementById("prevMonth").onclick = async ()=> {
+document.getElementById("prevMonth").onclick = async ()=>{
   current.setMonth(current.getMonth()-1);
   await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
 };
-document.getElementById("nextMonth").onclick = async ()=> {
+document.getElementById("nextMonth").onclick = async ()=>{
   current.setMonth(current.getMonth()+1);
   await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
