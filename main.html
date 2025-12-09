@@ -1,29 +1,60 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>근무 기록</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  body{font-family:sans-serif;margin:0;padding:0;}
+  .wrap{display:flex;flex-direction:column;padding:10px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .month-nav button{margin:0 5px;}
+  .grid{display:flex;gap:10px;}
+  .cal-card{border:1px solid #ccc;padding:10px;}
+  .days-grid{display:grid;grid-template-columns:repeat(7,40px);gap:5px;}
+  .day{border:1px solid #ddd;padding:5px;cursor:pointer;position:relative;}
+  .day.selected{background:#def;}
+  .day .preview{font-size:10px;color:#555;}
+  .panel{flex:1;display:flex;flex-direction:column;gap:10px;}
+  .card{border:1px solid #ccc;padding:10px;}
+  .field{margin-bottom:5px;}
+  .btn-primary{padding:5px 10px;background:#28a745;color:white;border:none;cursor:pointer;}
+  .btn-ghost{padding:5px 10px;background:#eee;border:none;cursor:pointer;}
+  .status{color:red;margin-bottom:5px;}
+</style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="topbar">
-    <h1>근무 기록</h1>
-    <p id="statusMsg" style="color:red;"></p>
+    <div>
+      <h1>근무 기록</h1>
+      <p class="lead">출근·퇴근 시간을 입력하면 자동으로 근무시간이 계산됩니다.</p>
+    </div>
+
+    <div class="month-nav">
+      <button id="prevMonth">◀</button>
+      <div id="monthTitle"></div>
+      <button id="nextMonth">▶</button>
+    </div>
   </header>
 
+  <div id="statusBox" class="status"></div>
+
   <main class="grid">
+    <!-- 캘린더 -->
     <section>
       <div class="cal-card">
         <div class="weekday-row">
           <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
         </div>
         <div id="calendar" class="days-grid"></div>
+        <div id="selectedEntry" class="selected-entry" style="margin-top:10px;"></div>
       </div>
     </section>
 
+    <!-- 오른쪽 입력 UI -->
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
@@ -57,18 +88,17 @@
           <button id="save" class="btn-primary">저장</button>
           <button id="delete" class="btn-ghost">삭제</button>
         </div>
-
-        <div class="foot-note"> 입력 예시: 093000, 18:20:55 등 모두 가능 </div>
       </div>
 
       <div class="card">
-        <h3>이번 주 총 근무시간</h3>
-        <div id="weekTotal" class="month-total">00:00:00</div>
+        <h3>이번주 총 근무시간</h3>
+        <div id="weekTotal">00:00:00</div>
       </div>
     </aside>
   </main>
 </div>
 
+<!-- Firebase + script.js -->
 <script type="module" src="script.js"></script>
 </body>
 </html>
