@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -12,6 +13,8 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
 
 // DOM
 const calendar = document.getElementById("calendar");
@@ -49,16 +52,15 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// 안전하게 Firestore 접근
+// Firestore 안전하게 접근
 async function loadDayData(date){
   try {
     const iso = date.toISOString().slice(0,10);
-    const docRef = doc(db, "worklog", iso);
-    const snap = await getDoc(docRef);
+    const snap = await getDoc(doc(db, "worklog", iso));
     return snap.exists() ? snap.data() : null;
   } catch(err) {
     console.warn("Firestore 접근 실패:", err);
-    return null; // 실패해도 달력 렌더링은 계속
+    return null; // 실패해도 달력 렌더링
   }
 }
 
@@ -103,8 +105,8 @@ function renderSelected(){
   });
 }
 
-// 달력 렌더링 (Firestore 에러와 무관하게)
-async function renderCalendar(){
+// 달력 렌더링 (Firestore 실패해도 DOM 표시)
+function renderCalendar(){
   calendar.innerHTML="";
   const y=current.getFullYear();
   const m=current.getMonth();
@@ -157,7 +159,7 @@ saveBtn.onclick = async ()=>{
     calcMonthTotal();
   } catch(err){
     console.error("저장 실패:", err);
-    alert("저장 중 오류가 발생했습니다.");
+    alert("저장 중 오류가 발생했습니다. 로그인 상태를 확인하세요.");
   }
 };
 
@@ -172,7 +174,7 @@ delBtn.onclick = async ()=>{
     calcMonthTotal();
   } catch(err){
     console.error("삭제 실패:", err);
-    alert("삭제 중 오류가 발생했습니다.");
+    alert("삭제 중 오류가 발생했습니다. 로그인 상태를 확인하세요.");
   }
 };
 
@@ -206,6 +208,24 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 초기화
-selectDate(new Date());
-calcMonthTotal();
+// 🔹 Google 로그인 상태 확인 후 초기화
+onAuthStateChanged(auth, user => {
+  if(user){
+    console.log("로그인 상태 확인:", user.email);
+    selectDate(new Date());
+    calcMonthTotal();
+  } else {
+    signInWithPopup(auth, provider)
+      .then(result => {
+        console.log("Google 로그인 성공:", result.user.email);
+        selectDate(new Date());
+        calcMonthTotal();
+      })
+      .catch(err => {
+        console.error("로그인 실패:", err);
+        alert("로그인이 필요합니다.");
+        // 로그인 실패 시 달력만 표시
+        renderCalendar();
+      });
+  }
+});
