@@ -1,203 +1,170 @@
-/* 기본 레이아웃 */
-body {
-  font-family: 'Noto Sans KR', sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f4f6f8;
-  color: #333;
+:root{
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --muted:#777;
+  --line:#E6E9EE;
+  --accent:#1B64DA;
+  --black:#111;
 }
 
-.wrap {
-  max-width: 1200px;
-  margin: 0 auto;
+*{box-sizing:border-box; font-family: Pretendard, sans-serif;}
+body{margin:0;background:var(--bg);color:var(--black);}
+.wrap{max-width:940px;margin:24px auto;padding:18px;}
+
+/* ------- Header ------- */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.topbar h1{font-size:20px;margin:0;}
+.lead{font-size:13px;color:var(--muted);margin-top:4px;}
+.month-nav{display:flex;gap:6px;align-items:center;}
+.nav-btn{border:1px solid var(--line);background:white;padding:6px 10px;border-radius:8px;cursor:pointer;}
+.month-label{font-size:16px;font-weight:600;}
+
+
+/* ------- Layout ------- */
+.grid{display:grid;grid-template-columns:1fr 360px;gap:18px;}
+@media(max-width:940px){ .grid{grid-template-columns:1fr;} }
+
+
+/* ------- Calendar ------- */
+.cal-card{background:white;border-radius:12px;padding:16px;border:1px solid var(--line);}
+.weekday-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:10px;font-size:12px;font-weight:500;}
+.weekday-row div:nth-child(1){color:#d64545;}
+.weekday-row div:nth-child(7){color:#3b66d6;}
+
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+.day{padding:10px;min-height:72px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;gap:4px;}
+.day span{font-size:13px;font-weight:500;}
+
+/* 날짜 색 로직 */
+.days-grid .day:nth-child(7n+1) span{color:#d64545;}
+.days-grid .day:nth-child(7n) span{color:#3b66d6;}
+
+.day:hover{background:#f9f9f9;}
+.day.selected{background:#eee !important;}
+.preview{font-size:11px;color:#666;white-space:pre-line;}
+
+
+/* ------- Right Panel ------- */
+.card{background:white;border-radius:12px;border:1px solid var(--line);padding:16px;margin-bottom: 18px;}
+.card h3{font-size:14px;font-weight:600;margin-bottom:10px;}
+
+.selected-date{font-size:15px;font-weight:700;margin-bottom:8px;}
+
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+.field label{font-size:12px;font-weight:500;color:#444;}
+input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;}
+textarea{min-height:80px;}
+
+.checkbox label{font-size:13px;color:#222;}
+
+.controls{display:flex;gap:8px;margin-top:6px;}
+.btn-primary{flex:1;background:black;color:white;border:none;padding:10px;border-radius:8px;font-weight:600;}
+.btn-ghost{flex:1;background:white;color:black;border:1px solid var(--line);padding:10px;border-radius:8px;}
+
+.foot-note{font-size:11px;color:#888;margin-top:6px;}
+.month-total{font-size:22px;font-weight:700;color:#333;margin-top:6px;}
+
+.entry-card{
+  border:1px solid #eee;
+  border-radius:10px;
+  padding:16px 20px;
+  margin-bottom:8px;
+}
+
+.entry-time{
+  font-weight:600;
+  font-size:13px;
+  color:#1b64da;
+  margin-bottom:4px;
+}
+
+.entry-memo{
+  font-size:13px;
+  color:#333;
+  white-space:pre-wrap;
+}
+
+.record-none {
+  border: 1px solid #eee;       /* 연한 테두리 */
+  font-size : 12px;
+  color: #aaa;                    /* 글자도 연한 회색 */
+  font-style: italic;            
   padding: 20px;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.topbar h1 {
-  margin: 0;
-  font-size: 1.8em;
-}
-
-.lead {
-  margin: 5px 0 0 0;
-  color: #666;
-}
-
-.month-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nav-btn {
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.month-label {
-  font-weight: bold;
-}
-
-/* 상태 메시지 */
-.status-box {
-  padding: 10px;
-  margin-bottom: 10px;
-  background-color: #ffeeba;
-  color: #856404;
-  border-radius: 4px;
-  display: none;
-}
-
-/* 그리드 레이아웃 */
-.grid {
-  display: flex;
-  gap: 20px;
-}
-
-/* 캘린더 */
-.cal-card {
-  background-color: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  flex: 1;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.weekday-row {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-}
-
-.day-cell {
-  padding: 10px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 4px;
-  position: relative;
-}
-
-.day-cell.today {
-  background-color: #d0ebff;
-}
-
-.day-cell.selected {
-  border: 2px solid #339af0;
-}
-
-.day-cell .worktime {
-  font-size: 0.75em;
-  color: #555;
-  margin-top: 4px;
-}
-
-/* 패널 */
-.panel {
-  width: 320px;
-}
-
-.card {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.field {
-  margin-bottom: 10px;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.field input, .field textarea {
-  width: 100%;
-  padding: 5px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 10px;
 }
 
 .field.checkbox {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start; /* 가운데 정렬 아님 */
+  gap: 8px;
 }
 
-.toggle input {
-  display: none;
-}
-
-.toggle .slider {
+/* 토글 레이블 */
+.toggle {
+  position: relative;
   width: 40px;
   height: 20px;
-  background-color: #ccc;
-  border-radius: 20px;
-  position: relative;
-  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-block;
 }
 
-.toggle .slider::before {
+/* 실제 체크박스 숨기기 */
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* 슬라이더 */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  border-radius: 10px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: 0.2s;
+}
+
+/* 원 */
+.slider::before {
   content: "";
   position: absolute;
-  width: 18px;
   height: 18px;
+  width: 18px;
+  left: 1px;
+  top: 1px;
   background-color: white;
   border-radius: 50%;
-  top: 1px;
-  left: 1px;
-  transition: 0.3s;
+  transition: 0.2s;
+}
+
+/* 체크 시 색상 및 원 이동 */
+.toggle input:checked + .slider {
+  background-color: #1b64da;
 }
 
 .toggle input:checked + .slider::before {
   transform: translateX(20px);
 }
 
-.controls {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+button.active {
+  transform: scale(0.95);
+  transition: transform 0.1s;
 }
 
-.btn-primary {
-  padding: 5px 10px;
-  background-color: #339af0;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-ghost {
-  padding: 5px 10px;
-  background-color: #f1f3f5;
-  color: #333;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* 총 근무시간 */
-.week-total {
-  font-size: 1.2em;
+.save-alert {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   font-weight: bold;
-  text-align: center;
 }
