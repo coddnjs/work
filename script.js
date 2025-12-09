@@ -36,9 +36,10 @@ const deleteBtn = document.getElementById('delete');
 const weekTotalEl = document.getElementById('weekTotal');
 const statusBox = document.getElementById('statusBox');
 
+// 달력 상태
 let currentYear, currentMonth;
 
-// 날짜 포맷
+// 날짜 포맷 YYYY-MM-DD
 function formatDate(d){
   const y=d.getFullYear();
   const m=String(d.getMonth()+1).padStart(2,'0');
@@ -46,19 +47,18 @@ function formatDate(d){
   return `${y}-${m}-${day}`;
 }
 
-// 초 단위 계산
+// 근무시간 계산
 function parseTimeSec(start,end,breakTime='000000'){
   const parseHMS = s => s.includes(':') ? s.split(':').map(Number) : [parseInt(s.slice(0,2)),parseInt(s.slice(2,4)),parseInt(s.slice(4,6))];
   let [sh,sm,ss]=parseHMS(start);
   let [eh,em,es]=parseHMS(end);
   let [bh,bm,bs]=parseHMS(breakTime);
-  let totalSec = (eh*3600+em*60+es)-(sh*3600+sm*60+ss)-(bh*3600+bm*60+bs);
+  let totalSec = (eh*3600+em*60+es) - (sh*3600+sm*60+ss) - (bh*3600+bm*60+bs);
   return totalSec>0?totalSec:0;
 }
 
-// 근무시간 계산
 function calculateWorkTime(start,end,breakTime='000000'){
-  let totalSec = parseTimeSec(start,end,breakTime);
+  const totalSec = parseTimeSec(start,end,breakTime);
   const h=String(Math.floor(totalSec/3600)).padStart(2,'0');
   const m=String(Math.floor((totalSec%3600)/60)).padStart(2,'0');
   const s=String(totalSec%60).padStart(2,'0');
@@ -74,9 +74,9 @@ function renderCalendar(){
   const startWeekDay = firstDay.getDay();
   const totalDays = lastDay.getDate();
 
-  // 빈칸 채우기
+  // 빈칸
   for(let i=0;i<startWeekDay;i++){
-    const emptyCell=document.createElement('div');
+    const emptyCell = document.createElement('div');
     emptyCell.className='day empty';
     calendarEl.appendChild(emptyCell);
   }
@@ -86,22 +86,16 @@ function renderCalendar(){
     const cell = document.createElement('div');
     cell.className='day';
     cell.dataset.date = formatDate(dateObj);
-    cell.innerHTML = `<span>${i}</span>`;
 
-    if(dateObj.toDateString()===new Date().toDateString()) cell.classList.add('today');
+    const span = document.createElement('span');
+    span.textContent = i;
+    cell.appendChild(span);
 
-    const cached = cachedData[cell.dataset.date];
-    const workDiv = document.createElement('div');
-    if(cached && cached.start && cached.end){
-      workDiv.className='preview';
-      workDiv.textContent = calculateWorkTime(cached.start,cached.end,cached.break);
-    }else{
-      workDiv.className='record-none';
-      workDiv.textContent='기록 없음';
-    }
-    cell.appendChild(workDiv);
+    // 오늘 강조
+    if(dateObj.toDateString() === new Date().toDateString()) cell.classList.add('today');
 
-    cell.onclick=()=>{
+    // 클릭 시 선택
+    cell.onclick = () => {
       document.querySelectorAll('.day.selected').forEach(el=>el.classList.remove('selected'));
       cell.classList.add('selected');
       selectDate(cell.dataset.date);
@@ -111,20 +105,53 @@ function renderCalendar(){
   }
 
   monthTitleEl.textContent = `${currentYear}년 ${currentMonth+1}월`;
+
+  // 선택된 날짜 다시 표시
+  if(selectedDate) {
+    const selectedCell = document.querySelector(`.day[data-date="${selectedDate}"]`);
+    if(selectedCell) selectedCell.classList.add('selected');
+  }
 }
 
-// 날짜 선택
+// 날짜 선택 시 패널 업데이트
 function selectDate(date){
   selectedDate = date;
   selectedDateBox.textContent = date;
-  const data = cachedData[date]||{};
-  startTimeInput.value = data.start||'';
-  endTimeInput.value = data.end||'';
-  breakCheck.checked = data.break?true:false;
-  breakTimeInput.style.display = breakCheck.checked?'block':'none';
-  breakTimeInput.value = data.break||'';
-  memoInput.value = data.memo||'';
+
+  const data = cachedData[date] || {};
+
+  startTimeInput.value = data.start || '';
+  endTimeInput.value = data.end || '';
+  breakCheck.checked = data.break ? true : false;
+  breakTimeInput.style.display = breakCheck.checked ? 'block' : 'none';
+  breakTimeInput.value = data.break || '';
+  memoInput.value = data.memo || '';
+
   updateWeekTotal(date);
+
+  // 기록 표시
+  const panelRecords = document.getElementById('panelRecords');
+  if(!panelRecords){
+    const recDiv = document.createElement('div');
+    recDiv.id = 'panelRecords';
+    selectedDateBox.parentElement.appendChild(recDiv);
+  }
+
+  const recDiv = document.getElementById('panelRecords');
+  recDiv.innerHTML = '';
+
+  if(data.start && data.end){
+    const entry = document.createElement('div');
+    entry.className = 'entry-card';
+    entry.innerHTML = `<div class="entry-time">${data.start} ~ ${data.end} (${calculateWorkTime(data.start,data.end,data.break)})</div>
+                       <div class="entry-memo">${data.memo || ''}</div>`;
+    recDiv.appendChild(entry);
+  } else {
+    const none = document.createElement('div');
+    none.className = 'record-none';
+    none.textContent = '기록 없음';
+    recDiv.appendChild(none);
+  }
 }
 
 // 선택 주 총 근무시간
@@ -149,25 +176,26 @@ function updateWeekTotal(dateStr){
   weekTotalEl.textContent=`${h}:${m}:${s}`;
 }
 
-// Firestore에서 데이터 불러오기
+// Firestore 데이터 불러오기
 async function loadMonthData(){
   if(!currentUser) return;
   statusBox.style.display='block';
   statusBox.textContent='데이터 불러오는 중...';
   cachedData={};
+
   try{
     const q = query(collection(db,'workRecords'),where('uid','==',currentUser.uid));
     const snapshot = await getDocs(q);
     snapshot.forEach(docSnap=>{
       const d = docSnap.data();
-      cachedData[d.date]={start:d.start,end:d.end,break:d.break,memo:d.memo};
+      cachedData[d.date] = { start:d.start, end:d.end, break:d.break, memo:d.memo };
     });
     statusBox.style.display='none';
     renderCalendar();
     if(selectedDate) selectDate(selectedDate);
   }catch(e){
     console.error(e);
-    statusBox.textContent='데이터 불러오기 실패. 다시 로그인 필요';
+    statusBox.textContent='데이터 불러오기 실패';
   }
 }
 
@@ -224,15 +252,24 @@ async function signIn(){
 // 초기화
 function init(){
   const today = new Date();
-  currentYear=today.getFullYear();
-  currentMonth=today.getMonth();
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth();
 
-  prevMonthBtn.onclick=()=>{currentMonth--; if(currentMonth<0){currentMonth=11;currentYear--;} loadMonthData(); renderCalendar();};
-  nextMonthBtn.onclick=()=>{currentMonth++; if(currentMonth>11){currentMonth=0;currentYear++;} loadMonthData(); renderCalendar();};
+  prevMonthBtn.onclick = ()=>{
+    currentMonth--;
+    if(currentMonth<0){currentMonth=11;currentYear--;}
+    loadMonthData(); renderCalendar();
+  };
 
-  saveBtn.onclick=saveData;
-  deleteBtn.onclick=deleteData;
-  breakCheck.onchange=()=>{breakTimeInput.style.display = breakCheck.checked?'block':'none';};
+  nextMonthBtn.onclick = ()=>{
+    currentMonth++;
+    if(currentMonth>11){currentMonth=0;currentYear++;}
+    loadMonthData(); renderCalendar();
+  };
+
+  saveBtn.onclick = saveData;
+  deleteBtn.onclick = deleteData;
+  breakCheck.onchange = ()=>{ breakTimeInput.style.display = breakCheck.checked?'block':'none'; };
 
   onAuthStateChanged(auth,user=>{
     if(user){currentUser=user; loadMonthData();}
