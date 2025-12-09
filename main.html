@@ -22,11 +22,9 @@
     </div>
   </header>
 
-  <!-- 상태 메시지 -->
   <div id="statusBox" class="status-box"></div>
 
   <main class="grid">
-    <!-- 캘린더 -->
     <section>
       <div class="cal-card">
         <div class="weekday-row">
@@ -36,7 +34,6 @@
       </div>
     </section>
 
-    <!-- 오른쪽 입력 UI -->
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
@@ -51,7 +48,7 @@
           <input type="text" id="endTime" placeholder="예: 180000">
         </div>
         <div class="field checkbox">
-          <label for="breakCheck">외출</label>
+          <label>외출</label>
           <label class="toggle">
             <input type="checkbox" id="breakCheck">
             <span class="slider"></span>
@@ -81,7 +78,6 @@
   </main>
 </div>
 
-<!-- Firebase + script.js -->
 <script type="module" src="script.js"></script>
 </body>
 </html>
