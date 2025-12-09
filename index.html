@@ -6,7 +6,6 @@
 <title>근무 기록</title>
 <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 <div class="wrap">
 
@@ -24,7 +23,6 @@
   </header>
 
   <main class="grid">
-
     <!-- 캘린더 -->
     <section>
       <div class="cal-card">
@@ -40,19 +38,16 @@
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
-
         <div class="selected-date" id="selectedDateBox">선택된 날짜 없음</div>
 
         <div class="field">
           <label>출근</label>
           <input type="text" id="startTime" placeholder="예: 090000">
         </div>
-
         <div class="field">
           <label>퇴근</label>
           <input type="text" id="endTime" placeholder="예: 180000">
         </div>
-
         <div class="field checkbox">
           <label for="breakCheck">외출</label>
           <label class="toggle">
@@ -60,12 +55,10 @@
             <span class="slider"></span>
           </label>
         </div>
-
         <div class="field" id="breakInputWrap" style="display:none;">
           <label>외출 시간</label>
           <input type="text" id="breakTime" placeholder="예: 003000">
         </div>
-
         <div class="field">
           <label>메모</label>
           <textarea id="memo" placeholder="메모 (선택)"></textarea>
@@ -83,7 +76,6 @@
         <h3>이번 달 총 근무시간</h3>
         <div id="monthTotal" class="month-total">00:00:00</div>
       </div>
-
     </aside>
   </main>
 </div>
