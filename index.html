@@ -6,7 +6,6 @@
 <title>근무 기록</title>
 <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 <div class="wrap">
 
@@ -15,7 +14,6 @@
       <h1>근무 기록</h1>
       <p class="lead">출근·퇴근 시간을 입력하면 자동으로 근무시간이 계산됩니다.</p>
     </div>
-
     <div class="month-nav">
       <button id="prevMonth" class="nav-btn">◀</button>
       <div id="monthTitle" class="month-label"></div>
@@ -73,7 +71,6 @@
           <button id="save" class="btn-primary">저장</button>
           <button id="delete" class="btn-ghost">삭제</button>
         </div>
-
         <div class="foot-note"> 입력 예시: 093000, 18:20:55 등 모두 가능 </div>
       </div>
 
@@ -85,31 +82,7 @@
   </main>
 </div>
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
-    authDomain: "work-3aad3.firebaseapp.com",
-    projectId: "work-3aad3",
-    storageBucket: "work-3aad3.appspot.com",
-    messagingSenderId: "225615907016",
-    appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // 모든 변수 전역에 등록
-  window.db = db;
-  window.doc = doc;
-  window.setDoc = setDoc;
-  window.getDoc = getDoc;
-  window.deleteDoc = deleteDoc;
-</script>
-
+<!-- script.js 모듈로 불러오기 -->
 <script type="module" src="script.js"></script>
 </body>
 </html>
