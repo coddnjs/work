@@ -113,29 +113,46 @@ function renderSelected(dbEntry){
 
 // 달력 렌더링
 async function renderCalendar(){
-  calendar.innerHTML="";
-  const y=current.getFullYear();
-  const m=current.getMonth();
-  monthTitle.textContent=`${y}년 ${m+1}월`;
+  calendar.innerHTML = "";
+  const y = current.getFullYear();
+  const m = current.getMonth();
+  monthTitle.textContent = `${y}년 ${m+1}월`;
 
-  const first=new Date(y,m,1).getDay();
-  const last=new Date(y,m+1,0).getDate();
+  const first = new Date(y,m,1).getDay();
+  const last = new Date(y,m+1,0).getDate();
 
-  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
+  // 1. 앞 빈칸 채우기
+  for(let i=0; i<first; i++){
+    const empty = document.createElement("div");
+    empty.className = "day empty";
+    calendar.appendChild(empty);
+  }
 
-  for(let d=1;d<=last;d++){
-    const iso=`${y}-${pad(m+1)}-${pad(d)}`;
-    const box=document.createElement("div");
-    box.className="day";
-    box.innerHTML=`<span>${d}</span>`;
+  // 2. 날짜 생성
+  for(let d=1; d<=last; d++){
+    const iso = `${y}-${pad(m+1)}-${pad(d)}`;
+    const box = document.createElement("div");
+    box.className = "day";
+    box.innerHTML = `<span>${d}</span>`;
+
+    const dateObj = new Date(y,m,d);
+    const dayOfWeek = dateObj.getDay();
+
+    // 요일별 색상
+    if(dayOfWeek === 0) box.classList.add("sun");
+    if(dayOfWeek === 6) box.classList.add("sat");
+
+    // 선택 날짜 강조
+    if(iso === selected.toISOString().slice(0,10)) box.classList.add("selected");
 
     const dbEntry = await load(iso);
-    if(iso === selected.toISOString().slice(0,10)) box.classList.add("selected");
     if(dbEntry) box.innerHTML += `<div class="preview">${dbEntry.time}</div>`;
+
     box.onclick = () => selectDate(new Date(iso));
     calendar.appendChild(box);
   }
 }
+
 
 // 저장
 saveBtn.onclick = async () => {
