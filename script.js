@@ -17,6 +17,9 @@ const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
 // DOM
+const loginBtn = document.getElementById("loginBtn");
+const loginContainer = document.getElementById("loginContainer");
+const calendarContainer = document.getElementById("calendarContainer");
 const calendar = document.getElementById("calendar");
 const monthTitle = document.getElementById("monthTitle");
 const selectedBox = document.getElementById("selectedDateBox");
@@ -29,28 +32,9 @@ const memoInput = document.getElementById("memo");
 const saveBtn = document.getElementById("save");
 const delBtn = document.getElementById("delete");
 const monthTotal = document.getElementById("monthTotal");
-const wrap = document.querySelector(".wrap"); // 전체 컨테이너 숨기기/보이기용
 
 let current = new Date();
 let selected = new Date();
-
-// 로그인 먼저
-async function loginAndInit(){
-  try {
-    const result = await signInWithPopup(auth, provider);
-    console.log("Google 로그인 성공:", result.user.email);
-
-    // 로그인 후 컨텐츠 표시
-    wrap.style.display = "block";
-    selectDate(new Date());
-    calcMonthTotal();
-
-  } catch(err){
-    console.error("로그인 실패:", err);
-    alert("로그인이 필요합니다.");
-    wrap.innerHTML = "<p>로그인이 필요합니다.</p>";
-  }
-}
 
 // 유틸
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -71,7 +55,7 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore 접근
+// Firestore 안전 접근
 async function loadDayData(date){
   try {
     const iso = date.toISOString().slice(0,10);
@@ -225,6 +209,19 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 🔹 초기 화면 숨기기, 로그인 후 표시
-wrap.style.display = "none";
-loginAndInit();
+// 🔹 로그인 버튼 클릭
+loginBtn.onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("Google 로그인 성공:", result.user.email);
+
+    loginContainer.style.display = "none";
+    calendarContainer.style.display = "block";
+
+    selectDate(new Date());
+    calcMonthTotal();
+  } catch(err){
+    console.error("로그인 실패:", err);
+    alert("로그인 실패, 다시 시도해주세요.");
+  }
+};
