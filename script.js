@@ -57,8 +57,8 @@ async function loadDayData(date){
     const snap = await getDoc(docRef);
     return snap.exists() ? snap.data() : null;
   } catch(err) {
-    console.error("Firestore 접근 실패:", err);
-    return null;
+    console.warn("Firestore 접근 실패:", err);
+    return null; // 실패해도 달력 렌더링은 계속
   }
 }
 
@@ -189,11 +189,12 @@ function calcMonthTotal(){
     });
     monthTotal.textContent=format(sum);
   }).catch(err=>{
-    console.error("총합 계산 실패:", err);
+    console.warn("총합 계산 실패:", err);
     monthTotal.textContent="00:00:00";
   });
 }
 
+// 이전/다음 달
 document.getElementById("prevMonth").onclick=()=>{
   current.setMonth(current.getMonth()-1);
   renderCalendar();
@@ -205,6 +206,6 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 초기
+// 초기화
 selectDate(new Date());
 calcMonthTotal();
