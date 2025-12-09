@@ -23,9 +23,9 @@
     </div>
   </header>
 
-
   <main class="grid">
 
+    <!-- 캘린더 -->
     <section>
       <div class="cal-card">
         <div class="weekday-row">
@@ -36,6 +36,7 @@
       </div>
     </section>
 
+    <!-- 오른쪽 입력 UI -->
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
@@ -87,35 +88,7 @@
   </main>
 </div>
 
-<!-- 🔥 Firebase를 먼저 로드 -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { 
-    getFirestore, doc, setDoc, getDoc, deleteDoc 
-  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
-    authDomain: "work-3aad3.firebaseapp.com",
-    projectId: "work-3aad3",
-    storageBucket: "work-3aad3.firebasestorage.app",
-    messagingSenderId: "225615907016",
-    appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // script.js에서 사용 가능하게 window에 붙여줌
-  window.db = db;
-  window.doc = doc;
-  window.setDoc = setDoc;
-  window.getDoc = getDoc;
-  window.deleteDoc = deleteDoc;
-</script>
-
-<!-- 🔥 script.js는 반드시 module이어야 import 사용 가능 -->
+<!-- Firebase + script.js -->
 <script type="module" src="script.js"></script>
-
 </body>
 </html>
