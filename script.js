@@ -12,7 +12,7 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, { localCache: 'none' }); 
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
