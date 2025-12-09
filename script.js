@@ -30,7 +30,6 @@ const delBtn = document.getElementById("delete");
 const weekTotal = document.getElementById("weekTotal");
 const calendarError = document.getElementById("calendarError");
 const reLoginBtn = document.getElementById("reLoginBtn");
-const selectedEntry = document.getElementById("selectedEntry");
 
 let current = new Date();
 let selected = new Date();
@@ -55,7 +54,7 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore에서 한 날 데이터 로드
+// 데이터 로드
 async function loadDayData(date){
   const iso = date.toISOString().slice(0,10);
   try{
@@ -63,12 +62,14 @@ async function loadDayData(date){
     const snap = await getDoc(docRef);
     if(snap.exists()){
       monthDataCache[iso] = snap.data();
+      calendarError.style.display = "none";
+      reLoginBtn.style.display = "none";
       return snap.data();
     } else {
       monthDataCache[iso] = null;
       return null;
     }
-  } catch(e){
+  }catch(e){
     console.error("Firestore 접근 실패:", e);
     calendarError.style.display = "block";
     calendarError.textContent = "데이터 불러오기 실패!";
@@ -77,32 +78,10 @@ async function loadDayData(date){
   }
 }
 
-// 한 달 데이터 로드
-async function loadMonthData(year, month){
-  try{
-    const start = new Date(year, month, 1);
-    const end = new Date(year, month+1, 0);
-    const snap = await getDocs(collection(db,"worklog"));
-    snap.forEach(docSnap => {
-      const iso = docSnap.id; 
-      const d = new Date(iso);
-      if(d >= start && d <= end){
-        monthDataCache[iso] = docSnap.data();
-      }
-    });
-  } catch(e){
-    console.error("월 데이터 로드 실패:", e);
-    calendarError.style.display = "block";
-    calendarError.textContent = "월 데이터 불러오기 실패!";
-  }
-}
-
-// 선택 날짜 렌더링 + 하단 기록
+// 선택 날짜 표시
 async function renderSelected(){
-  const iso = selected.toISOString().slice(0,10);
-  selectedBox.textContent = iso;
-  await loadDayData(selected);
-  const data = monthDataCache[iso];
+  selectedBox.textContent = selected.toISOString().slice(0,10);
+  const data = monthDataCache[selected.toISOString().slice(0,10)];
   startInput.value = data?.start || "";
   endInput.value = data?.end || "";
   memoInput.value = data?.memo || "";
@@ -116,37 +95,11 @@ async function renderSelected(){
     breakInput.value = "";
   }
   calcWeekTotal(selected);
-
-  // 하단 기록 표시
-  if(data){
-    selectedEntry.innerHTML = `
-      <div class="entry-card">
-        <div class="entry-time" style="font-size:12px; font-weight:400; color:#666;">
-          ${iso}<br>
-          ${data.start} - ${data.end} (외출: ${data.break || '없음'}) | 총: ${data.time}
-        </div>
-        <div class="entry-memo">${data.memo || '메모 없음'}</div>
-      </div>
-    `;
-  } else {
-    selectedEntry.innerHTML = `<div class="record-none">선택한 날짜에 기록이 없습니다.</div>`;
-  }
 }
 
-// 달력 렌더링
+// 캘린더 렌더링
 function renderCalendar(){
   calendar.innerHTML="";
-
-  // 요일 row
-  const weekdayRow = document.createElement("div");
-  weekdayRow.className = "weekday-row";
-  ["일","월","화","수","목","금","토"].forEach((w,i)=>{
-    const div = document.createElement("div");
-    div.textContent = w;
-    weekdayRow.appendChild(div);
-  });
-  calendar.appendChild(weekdayRow);
-
   const y = current.getFullYear();
   const m = current.getMonth();
   monthTitle.textContent = `${y}년 ${m+1}월`;
@@ -154,11 +107,7 @@ function renderCalendar(){
   const first = new Date(y,m,1).getDay();
   const last = new Date(y,m+1,0).getDate();
 
-  // 빈 칸
-  for(let i=0;i<first;i++){
-    const empty = document.createElement("div");
-    calendar.appendChild(empty);
-  }
+  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
 
   for(let d=1; d<=last; d++){
     const iso = `${y}-${pad(m+1)}-${pad(d)}`;
@@ -191,7 +140,7 @@ function highlightSelectedDay(){
   document.querySelectorAll(".day").forEach(d=>{
     d.classList.remove("selected");
     const span = d.querySelector("span");
-    if(span && Number(span.textContent) === selected.getDate()) d.classList.add("selected");
+    if(span && span.textContent==selected.getDate()) d.classList.add("selected");
   });
 }
 
@@ -213,7 +162,7 @@ function calcWeekTotal(selDate){
 }
 
 // 이벤트
-breakCheck.onclick = ()=>{
+breakCheck.onclick = ()=> {
   breakWrap.style.display = breakCheck.checked ? "block":"none";
   if(!breakCheck.checked) breakInput.value="";
 };
@@ -237,7 +186,7 @@ saveBtn.onclick = async ()=>{
   });
   saveBtn.textContent = "저장";
 
-  await loadMonthData(current.getFullYear(), current.getMonth());
+  await loadDayData(selected);
   renderCalendar();
   renderSelected();
 };
@@ -251,24 +200,23 @@ delBtn.onclick = async ()=>{
 };
 
 // 이전/다음 달
-document.getElementById("prevMonth").onclick = async ()=>{
+document.getElementById("prevMonth").onclick = ()=>{
   current.setMonth(current.getMonth()-1);
-  await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
 };
-document.getElementById("nextMonth").onclick = async ()=>{
+document.getElementById("nextMonth").onclick = ()=>{
   current.setMonth(current.getMonth()+1);
-  await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
 };
 
 // 재로그인
-reLoginBtn.onclick = ()=> signOut(auth).then(()=> location.reload());
+reLoginBtn.onclick = ()=>{
+  signOut(auth).then(()=> location.reload());
+};
 
 // 초기
-onAuthStateChanged(auth, async user=>{
+onAuthStateChanged(auth, user=>{
   if(user){
-    await loadMonthData(current.getFullYear(), current.getMonth());
     renderCalendar();
     renderSelected();
   } else {
