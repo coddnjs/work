@@ -26,7 +26,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
   authDomain: "work-3aad3.firebaseapp.com",
   projectId: "work-3aad3",
-  storageBucket: "work-3aad3.firebasestorage.app",
+  storageBucket: "work-3aad3.appspot.com",
   messagingSenderId: "225615907016",
   appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
 };
@@ -39,7 +39,6 @@ document.getElementById("googleLogin").onclick = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     console.log("로그인 성공:", result.user.email);
-    // 로그인 후 main.html로 이동
     window.location.href = "main.html";
   } catch (err) {
     console.error("로그인 실패:", err);
