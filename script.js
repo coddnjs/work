@@ -30,7 +30,7 @@ const delBtn = document.getElementById("delete");
 const weekTotal = document.getElementById("weekTotal");
 const calendarError = document.getElementById("calendarError");
 const reLoginBtn = document.getElementById("reLoginBtn");
-const selectedEntry = document.getElementById("selectedEntry"); // 하단 기록 영역
+const selectedEntry = document.getElementById("selectedEntry");
 
 let current = new Date();
 let selected = new Date();
@@ -121,52 +121,46 @@ async function renderSelected(){
 
   // 하단 기록 표시
   if(data){
-  const startTime = `${data.start.slice(0,2)}:${data.start.slice(2,4)}:${data.start.slice(4,6)}`;
-  const endTime = `${data.end.slice(0,2)}:${data.end.slice(2,4)}:${data.end.slice(4,6)}`;
-  const isoDate = selected.toISOString().slice(0,10);
+    const startTime = `${data.start.slice(0,2)}:${data.start.slice(2,4)}:${data.start.slice(4,6)}`;
+    const endTime = `${data.end.slice(0,2)}:${data.end.slice(2,4)}:${data.end.slice(4,6)}`;
+    const isoDate = selected.toISOString().slice(0,10);
 
-  selectedEntry.innerHTML = `
-    <div class="entry-card">
-      <div class="entry-date" style="font-size:12px; font-weight:300; color:#888; margin-bottom:4px;">
-        ${isoDate}
+    selectedEntry.innerHTML = `
+      <div class="entry-card">
+        <div class="entry-date-small">${isoDate}</div>
+        <div class="entry-time-small">
+          ${startTime} - ${endTime} (${data.break ? '외출 '+data.break : '외출 없음'}) | 총 근무시간: ${data.time}
+        </div>
+        <div class="entry-memo">${data.memo || '메모 없음'}</div>
       </div>
-      <div class="entry-time" style="font-size:13px; font-weight:400; color:#555;">
-        ${startTime} - ${endTime} (${data.break ? '외출 '+data.break : '외출 없음'}) | 총 근무시간: ${data.time}
-      </div>
-      <div class="entry-memo">${data.memo || '메모 없음'}</div>
-    </div>
-  `;
-} else {
-  selectedEntry.innerHTML = `<div class="record-none">선택한 날짜에 기록이 없습니다.</div>`;
-}
-
+    `;
+  } else {
+    selectedEntry.innerHTML = `<div class="record-none">선택한 날짜에 기록이 없습니다.</div>`;
+  }
 }
 
 // 캘린더 렌더링
 function renderCalendar(){
-  calendar.innerHTML="";
-
-  // 요일 표시
-  const weekdayRow = document.createElement("div");
-  weekdayRow.className = "weekday-row";
-  ["일","월","화","수","목","금","토"].forEach(w => {
-    const d = document.createElement("div");
-    d.textContent = w;
-    weekdayRow.appendChild(d);
-  });
-  calendar.appendChild(weekdayRow);
+  calendar.innerHTML = "";
 
   const y = current.getFullYear();
   const m = current.getMonth();
   monthTitle.textContent = `${y}년 ${m+1}월`;
 
+  // 요일 헤더
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "weekday-row";
+  ["일","월","화","수","목","금","토"].forEach(day => {
+    const div = document.createElement("div");
+    div.textContent = day;
+    weekdayRow.appendChild(div);
+  });
+  calendar.appendChild(weekdayRow);
+
   const first = new Date(y,m,1).getDay();
   const last = new Date(y,m+1,0).getDate();
 
-  for(let i=0;i<first;i++){
-    const empty = document.createElement("div");
-    calendar.appendChild(empty);
-  }
+  for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
 
   for(let d=1; d<=last; d++){
     const iso = `${y}-${pad(m+1)}-${pad(d)}`;
@@ -199,7 +193,7 @@ function highlightSelectedDay(){
   document.querySelectorAll(".day").forEach(d=>{
     d.classList.remove("selected");
     const span = d.querySelector("span");
-    if(span && span.textContent==selected.getDate()) d.classList.add("selected");
+    if(span && Number(span.textContent) === selected.getDate()) d.classList.add("selected");
   });
 }
 
@@ -245,7 +239,6 @@ saveBtn.onclick = async ()=>{
   });
   saveBtn.textContent = "저장";
 
-  await loadDayData(selected);
   await loadMonthData(current.getFullYear(), current.getMonth());
   renderCalendar();
   renderSelected();
@@ -275,7 +268,7 @@ document.getElementById("nextMonth").onclick = async ()=>{
 reLoginBtn.onclick = ()=> signOut(auth).then(()=> location.reload());
 
 // 초기
-onAuthStateChanged(auth, async user => {
+onAuthStateChanged(auth, async user=>{
   if(user){
     await loadMonthData(current.getFullYear(), current.getMonth());
     renderCalendar();
