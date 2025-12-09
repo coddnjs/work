@@ -28,46 +28,34 @@ const memoInput = document.getElementById("memo");
 const saveBtn = document.getElementById("save");
 const delBtn = document.getElementById("delete");
 const weekTotal = document.getElementById("weekTotal");
-const calendarError = document.getElementById("calendarError");
+const calendarError = document.getElementById("statusBox");
 const reLoginBtn = document.getElementById("reLoginBtn");
-const selectedEntry = document.getElementById("selectedEntry"); 
+const selectedEntry = document.getElementById("selectedEntry");
 
 let current = new Date();
 let selected = new Date();
-let monthDataCache = {}; 
+let monthDataCache = {}; // 날짜별 데이터 캐싱
 
-// 유틸
+// ---------------- 유틸 ----------------
 function pad(n){ return String(n).padStart(2,"0"); }
-
-// hhmmss → hh:mm
-function toHourMinute(t){
-  if(!t) return "";
-  t = t.toString().padStart(6,"0");
-  const h = t.slice(0,2);
-  const m = t.slice(2,4);
-  return `${h}:${m}`;
-}
-
-// 초 → 시간/분
-function formatDuration(sec){
-  const h = Math.floor(sec/3600);
-  const m = Math.floor((sec%3600)/60);
-  return `${h}시간 ${m}분`;
-}
-
-// hhmmss → 초
-function parseTime(t){
+function parse(t){
   if(!t) return 0;
-  t = t.replace(/[^0-9:]/g,"").trim();
+  t=t.replace(/[^0-9:]/g,"").trim();
   if(t.includes(":")){
-    const [h,m,s] = t.split(":").map(Number);
-    return h*3600 + m*60 + (s||0);
+    const [h,m,s]=t.split(":").map(Number);
+    return h*3600+m*60+(s||0);
   }
-  t = t.padStart(6,"0");
+  t=t.padStart(6,"0");
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
+function format(sec){
+  const h=Math.floor(sec/3600);
+  const m=Math.floor((sec%3600)/60);
+  const s=sec%60;
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
 
-// 한 날 데이터 로드
+// ---------------- 데이터 로드 ----------------
 async function loadDayData(date){
   const iso = date.toISOString().slice(0,10);
   try{
@@ -76,7 +64,6 @@ async function loadDayData(date){
     if(snap.exists()){
       monthDataCache[iso] = snap.data();
       calendarError.style.display = "none";
-      reLoginBtn.style.display = "none";
       return snap.data();
     } else {
       monthDataCache[iso] = null;
@@ -86,12 +73,10 @@ async function loadDayData(date){
     console.error("Firestore 접근 실패:", e);
     calendarError.style.display = "block";
     calendarError.textContent = "데이터 불러오기 실패!";
-    reLoginBtn.style.display = "inline-block";
     return null;
   }
 }
 
-// 한 달 데이터 로드
 async function loadMonthData(year, month){
   try{
     const start = new Date(year, month, 1);
@@ -111,7 +96,7 @@ async function loadMonthData(year, month){
   }
 }
 
-// 선택 날짜 표시 + 하단 기록
+// ---------------- 선택 날짜 렌더 ----------------
 async function renderSelected(){
   selectedBox.textContent = selected.toISOString().slice(0,10);
   await loadDayData(selected);
@@ -130,14 +115,25 @@ async function renderSelected(){
   }
   calcWeekTotal(selected);
 
-  // 하단 기록 표시
+  // ---------- 기록 영역 렌더 ----------
   if(data){
-    const s = toHourMinute(data.start);
-    const e = toHourMinute(data.end);
-    const dur = formatDuration(data.sec);
+    const startSec = parse(data.start);
+    const endSec = parse(data.end);
+    const breakSec = parse(data.break);
+    const diffSec = endSec - startSec - breakSec;
+
+    const formatHM = sec => {
+      const h = Math.floor(sec/3600);
+      const m = Math.floor((sec%3600)/60);
+      return `${pad(h)}:${pad(m)}`;
+    }
+
     selectedEntry.innerHTML = `
       <div class="entry-card">
-        <div class="entry-time">${s} - ${e} (${dur})</div>
+        <div class="entry-date">${selected.toISOString().slice(0,10)}</div>
+        <div class="entry-time-short">
+          ${formatHM(startSec)} - ${formatHM(endSec)} (${Math.floor(diffSec/3600)}h ${Math.floor((diffSec%3600)/60)}m)
+        </div>
         <div class="entry-memo">${data.memo || '메모 없음'}</div>
       </div>
     `;
@@ -146,7 +142,7 @@ async function renderSelected(){
   }
 }
 
-// 캘린더 렌더링
+// ---------------- 캘린더 렌더 ----------------
 function renderCalendar(){
   calendar.innerHTML="";
   const y = current.getFullYear();
@@ -184,16 +180,16 @@ function renderCalendar(){
   }
 }
 
-// 선택 날짜 하이라이트
+// ---------------- 선택 날짜 하이라이트 ----------------
 function highlightSelectedDay(){
   document.querySelectorAll(".day").forEach(d=>{
     d.classList.remove("selected");
     const span = d.querySelector("span");
-    if(span && span.textContent==selected.getDate()) d.classList.add("selected");
+    if(span && Number(span.textContent) === selected.getDate()) d.classList.add("selected");
   });
 }
 
-// 주간 합산
+// ---------------- 주간 합산 ----------------
 function calcWeekTotal(selDate){
   const dayOfWeek = selDate.getDay();
   const startOfWeek = new Date(selDate);
@@ -207,20 +203,20 @@ function calcWeekTotal(selDate){
     const data = monthDataCache[iso];
     if(data?.sec) sum += data.sec;
   }
-  weekTotal.textContent = formatDuration(sum);
+  weekTotal.textContent = format(sum);
 }
 
-// 이벤트
+// ---------------- 이벤트 ----------------
 breakCheck.onclick = ()=> {
   breakWrap.style.display = breakCheck.checked ? "block":"none";
   if(!breakCheck.checked) breakInput.value="";
 };
 
-saveBtn.onclick = async ()=>{
+saveBtn.onclick = async ()=> {
   const iso = selected.toISOString().slice(0,10);
-  const s = parseTime(startInput.value);
-  const e = parseTime(endInput.value);
-  const b = parseTime(breakInput.value);
+  const s = parse(startInput.value);
+  const e = parse(endInput.value);
+  const b = parse(breakInput.value);
   if(e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
   const total = e-s-b;
 
@@ -230,7 +226,7 @@ saveBtn.onclick = async ()=>{
     end: endInput.value,
     break: breakCheck.checked ? breakInput.value : "",
     memo: memoInput.value.trim(),
-    time: formatDuration(total),
+    time: format(total),
     sec: total
   });
   saveBtn.textContent = "저장";
@@ -262,10 +258,10 @@ document.getElementById("nextMonth").onclick = async ()=>{
 };
 
 // 재로그인
-reLoginBtn.onclick = ()=> signOut(auth).then(()=> location.reload());
+if(reLoginBtn) reLoginBtn.onclick = ()=> signOut(auth).then(()=> location.reload());
 
 // 초기
-onAuthStateChanged(auth, async user=>{
+onAuthStateChanged(auth, async user => {
   if(user){
     await loadMonthData(current.getFullYear(), current.getMonth());
     renderCalendar();
