@@ -168,3 +168,10 @@ button.active {
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   font-weight: bold;
 }
+
+.entry-time-short {
+  font-size: 12px;
+  color: #888;        /* 연한 회색 */
+  font-weight: 400;
+  margin-bottom: 6px;
+}
