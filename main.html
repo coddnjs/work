@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>근무 기록</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="wrap">
+
   <header class="topbar">
     <div>
       <h1>근무 기록</h1>
       <p class="lead">출근·퇴근 시간을 입력하면 자동으로 근무시간이 계산됩니다.</p>
     </div>
+
     <div class="month-nav">
       <button id="prevMonth" class="nav-btn">◀</button>
       <div id="monthTitle" class="month-label"></div>
@@ -22,6 +23,7 @@
   </header>
 
   <main class="grid">
+    <!-- 캘린더 -->
     <section>
       <div class="cal-card">
         <div class="weekday-row">
@@ -32,6 +34,7 @@
       </div>
     </section>
 
+    <!-- 오른쪽 입력 UI -->
     <aside class="panel">
       <div class="card">
         <h3>기록</h3>
@@ -80,7 +83,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -91,7 +94,6 @@ const firebaseConfig = {
   messagingSenderId: "225615907016",
   appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -112,7 +114,7 @@ const monthTotal = document.getElementById("monthTotal");
 let current = new Date();
 let selected = new Date();
 
-// 유틸 함수
+// 유틸
 function pad(n){ return String(n).padStart(2,"0"); }
 function format(sec){
   const h=Math.floor(sec/3600);
@@ -131,24 +133,23 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore 데이터 로드
+// Firestore 접근 함수
 async function loadDayData(date){
   const iso = date.toISOString().slice(0,10);
   try{
     const snap = await getDoc(doc(db,"worklog",iso));
     return snap.exists() ? snap.data() : null;
-  } catch(err){
-    console.error("Firestore 접근 실패:", err);
+  } catch(e){
+    console.error("Firestore 접근 실패:", e);
     return null;
   }
 }
 
-// 날짜 선택
 async function selectDate(d){
   selected = d;
   selectedBox.textContent = selected.toISOString().slice(0,10);
-  const dbData = await loadDayData(selected);
 
+  const dbData = await loadDayData(selected);
   startInput.value = dbData?.start || "";
   endInput.value = dbData?.end || "";
   memoInput.value = dbData?.memo || "";
@@ -183,7 +184,6 @@ function renderSelected(){
   });
 }
 
-// 캘린더 렌더링
 async function renderCalendar(){
   calendar.innerHTML="";
   const y=current.getFullYear();
@@ -251,6 +251,7 @@ function calcMonthTotal(){
   });
 }
 
+// 월 이동
 document.getElementById("prevMonth").onclick=()=>{
   current.setMonth(current.getMonth()-1);
   renderCalendar();
@@ -262,17 +263,17 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 🔹 핵심: 로그인 상태 확인 후 캘린더 실행
+// 🔹 로그인 확인 후 Firestore 접근
 onAuthStateChanged(auth, user=>{
   if(user){
-    console.log("로그인된 사용자:", user.email);
+    console.log("로그인 성공:", user.email);
     selectDate(new Date());
     calcMonthTotal();
   } else {
-    window.location.href = "index.html";
+    console.log("로그인 안됨, login.html로 이동");
+    location.href = "login.html";
   }
 });
 </script>
-
 </body>
 </html>
