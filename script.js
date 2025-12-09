@@ -49,14 +49,20 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// 달력 렌더링
+// 안전하게 Firestore 접근
 async function loadDayData(date){
-  const iso = date.toISOString().slice(0,10);
-  const docRef = doc(db, "worklog", iso);
-  const snap = await getDoc(docRef);
-  return snap.exists() ? snap.data() : null;
+  try {
+    const iso = date.toISOString().slice(0,10);
+    const docRef = doc(db, "worklog", iso);
+    const snap = await getDoc(docRef);
+    return snap.exists() ? snap.data() : null;
+  } catch(err) {
+    console.error("Firestore 접근 실패:", err);
+    return null;
+  }
 }
 
+// 날짜 선택
 async function selectDate(d){
   selected = d;
   selectedBox.textContent = selected.toISOString().slice(0,10);
@@ -79,6 +85,7 @@ async function selectDate(d){
   renderSelected();
 }
 
+// 선택된 날짜 기록
 function renderSelected(){
   const iso = selected.toISOString().slice(0,10);
   const box = document.getElementById("selectedEntry");
@@ -96,6 +103,7 @@ function renderSelected(){
   });
 }
 
+// 달력 렌더링 (Firestore 에러와 무관하게)
 async function renderCalendar(){
   calendar.innerHTML="";
   const y=current.getFullYear();
@@ -108,14 +116,11 @@ async function renderCalendar(){
   for(let i=0;i<first;i++) calendar.appendChild(document.createElement("div"));
 
   for(let d=1; d<=last; d++){
-    const iso=`${y}-${pad(m+1)}-${pad(d)}`;
     const box=document.createElement("div");
     box.className="day";
     box.innerHTML=`<span>${d}</span>`;
-    const dbData = await loadDayData(new Date(iso));
-    if(dbData) box.innerHTML+=`<div class="preview">${dbData.time}</div>`;
-    if(iso===selected.toISOString().slice(0,10)) box.classList.add("selected");
-    box.onclick = ()=>selectDate(new Date(iso));
+    if(d === selected.getDate() && m === selected.getMonth() && y === selected.getFullYear()) box.classList.add("selected");
+    box.onclick = ()=>selectDate(new Date(y,m,d));
     calendar.appendChild(box);
   }
 }
@@ -127,31 +132,51 @@ breakCheck.onclick = ()=> {
 };
 
 saveBtn.onclick = async ()=>{
-  const iso = selected.toISOString().slice(0,10);
-  const s = parse(startInput.value);
-  const e = parse(endInput.value);
-  const b = parse(breakInput.value);
-  if(e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
-  const total = e-s-b;
+  try{
+    const iso = selected.toISOString().slice(0,10);
+    const s = parse(startInput.value);
+    const e = parse(endInput.value);
+    const b = parse(breakInput.value);
+    if(e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
+    const total = e-s-b;
 
-  // 저장
-  await setDoc(doc(db,"worklog",iso),{
-    start: startInput.value,
-    end: endInput.value,
-    break: breakCheck.checked ? breakInput.value : "",
-    memo: memoInput.value.trim(),
-    time: format(total),
-    sec: total
-  });
+    await setDoc(doc(db,"worklog",iso),{
+      start: startInput.value,
+      end: endInput.value,
+      break: breakCheck.checked ? breakInput.value : "",
+      memo: memoInput.value.trim(),
+      time: format(total),
+      sec: total
+    });
 
-  saveBtn.classList.add("clicked");
-  setTimeout(()=>saveBtn.classList.remove("clicked"),200);
-  alert("저장되었습니다!");
-  renderCalendar();
-  renderSelected();
-  calcMonthTotal();
+    saveBtn.classList.add("clicked");
+    setTimeout(()=>saveBtn.classList.remove("clicked"),200);
+    alert("저장되었습니다!");
+    renderCalendar();
+    renderSelected();
+    calcMonthTotal();
+  } catch(err){
+    console.error("저장 실패:", err);
+    alert("저장 중 오류가 발생했습니다.");
+  }
 };
 
+delBtn.onclick = async ()=>{
+  try{
+    const iso = selected.toISOString().slice(0,10);
+    const confirmed = confirm("정말 삭제하시겠습니까?");
+    if(!confirmed) return;
+    await deleteDoc(doc(db,"worklog",iso));
+    alert("삭제되었습니다!");
+    selectDate(selected);
+    calcMonthTotal();
+  } catch(err){
+    console.error("삭제 실패:", err);
+    alert("삭제 중 오류가 발생했습니다.");
+  }
+};
+
+// 월 총합
 function calcMonthTotal(){
   const y=current.getFullYear();
   const m=current.getMonth()+1;
@@ -163,6 +188,9 @@ function calcMonthTotal(){
       }
     });
     monthTotal.textContent=format(sum);
+  }).catch(err=>{
+    console.error("총합 계산 실패:", err);
+    monthTotal.textContent="00:00:00";
   });
 }
 
