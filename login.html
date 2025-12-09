@@ -5,23 +5,45 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>근무 기록 로그인</title>
 <style>
-  body { font-family: Pretendard, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f5f7fa; }
-  .login-box { text-align:center; background:white; padding:40px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1); }
+  body { 
+    font-family: Pretendard, sans-serif; 
+    display:flex; 
+    justify-content:center; 
+    align-items:center; 
+    height:100vh; 
+    margin:0; 
+    background:#f5f7fa; 
+  }
+  .login-box { 
+    text-align:center; 
+    background:white; 
+    padding:40px; 
+    border-radius:12px; 
+    box-shadow:0 8px 20px rgba(0,0,0,0.1); 
+  }
   .login-box h1 { margin-bottom:16px; }
   .login-box p { color:#555; margin-bottom:24px; }
-  #loginBtn { display:flex; align-items:center; justify-content:center; gap:10px; background:white; border:1px solid #ddd; padding:12px 20px; border-radius:8px; font-size:16px; cursor:pointer; transition:0.2s; }
-  #loginBtn:hover { background:#f1f1f1; transform:scale(1.02); }
-  #loginBtn img { width:20px; height:20px; }
+  #loginBtn { 
+    background:#4285F4; 
+    color:white; 
+    border:none; 
+    padding:12px 20px; 
+    border-radius:8px; 
+    font-size:16px; 
+    cursor:pointer; 
+    transition:0.2s; 
+  }
+  #loginBtn:hover { 
+    background:#357ae8; 
+    transform:scale(1.02); 
+  }
 </style>
 </head>
 <body>
   <div class="login-box">
     <h1>근무 기록 앱</h1>
     <p>Google 계정으로 로그인하세요.</p>
-    <button id="loginBtn">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google"> 
-      Google 로그인
-    </button>
+    <button id="loginBtn">Google 로그인</button>
   </div>
 
   <script type="module">
