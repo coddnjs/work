@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>근무 기록 로그인</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div style="text-align:center; margin-top:100px;">
+    <h1>근무 기록 앱</h1>
+    <p>Google 계정으로 로그인하세요.</p>
+    <button id="loginBtn" class="btn-primary" style="padding:12px 20px; font-size:16px;">Google 로그인</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+    // Firebase 설정
+    const firebaseConfig = {
+      apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
+      authDomain: "work-3aad3.firebaseapp.com",
+      projectId: "work-3aad3",
+      storageBucket: "work-3aad3.firebasestorage.app",
+      messagingSenderId: "225615907016",
+      appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById("loginBtn");
+    loginBtn.onclick = async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        console.log("로그인 성공:", result.user.email);
+        window.location.href = "main.html";
+      } catch(err) {
+        console.error("로그인 실패:", err);
+        alert("로그인 실패, 다시 시도해주세요.");
+      }
+    };
+  </script>
+</body>
+</html>
