@@ -1,25 +1,17 @@
-// Firebase 모듈 import
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { initializeFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 // Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
   authDomain: "work-3aad3.firebaseapp.com",
   projectId: "work-3aad3",
-  storageBucket: "work-3aad3.firebasestorage.app",
+  storageBucket: "work-3aad3.appspot.com",
   messagingSenderId: "225615907016",
   appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
 };
 const app = initializeApp(firebaseConfig);
-
-// Firestore persistence 비활성화
-const db = initializeFirestore(app, { localCache: 'none' });
-
-// Auth 초기화
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+const db = getFirestore(app);
 
 // DOM
 const calendar = document.getElementById("calendar");
@@ -32,12 +24,14 @@ const breakCheck = document.getElementById("breakCheck");
 const breakWrap = document.getElementById("breakInputWrap");
 const memoInput = document.getElementById("memo");
 const saveBtn = document.getElementById("save");
+const delBtn = document.getElementById("delete");
 const monthTotal = document.getElementById("monthTotal");
 
 let current = new Date();
 let selected = new Date();
+const dayCache = {}; // 캐시 추가
 
-// Utility
+// 유틸
 function pad(n){ return String(n).padStart(2,"0"); }
 function format(sec){
   const h=Math.floor(sec/3600);
@@ -56,20 +50,21 @@ function parse(t){
   return Number(t.slice(0,2))*3600 + Number(t.slice(2,4))*60 + Number(t.slice(4,6));
 }
 
-// Firestore 데이터 불러오기
+// 달력 렌더링
 async function loadDayData(date){
   const iso = date.toISOString().slice(0,10);
-  try {
-    const docRef = doc(db, "worklog", iso);
-    const snap = await getDoc(docRef);
-    return snap.exists() ? snap.data() : null;
-  } catch(err){
-    console.error("Firestore 접근 실패:", err);
+  if(dayCache[iso]) return dayCache[iso]; // 캐시 활용
+  try{
+    const snap = await getDoc(doc(db,"worklog",iso));
+    const data = snap.exists()? snap.data() : null;
+    dayCache[iso] = data;
+    return data;
+  }catch(e){
+    console.error("Firestore 접근 실패:", e);
     return null;
   }
 }
 
-// 날짜 선택
 async function selectDate(d){
   selected = d;
   selectedBox.textContent = selected.toISOString().slice(0,10);
@@ -92,7 +87,23 @@ async function selectDate(d){
   renderSelected();
 }
 
-// 달력 렌더링
+function renderSelected(){
+  const iso = selected.toISOString().slice(0,10);
+  const box = document.getElementById("selectedEntry");
+  loadDayData(selected).then(db=>{
+    if(!db){
+      box.innerHTML = `<div class="entry-card record-none">기록 없음</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="entry-card">
+        <div class="entry-time">${iso} (${db.time})</div>
+        <div class="entry-memo">${db.memo||""}</div>
+      </div>
+    `;
+  });
+}
+
 async function renderCalendar(){
   calendar.innerHTML="";
   const y=current.getFullYear();
@@ -117,24 +128,6 @@ async function renderCalendar(){
   }
 }
 
-// 선택된 날짜 내용 렌더링
-function renderSelected(){
-  const iso = selected.toISOString().slice(0,10);
-  const box = document.getElementById("selectedEntry");
-  loadDayData(selected).then(db=>{
-    if(!db){
-      box.innerHTML = `<div class="entry-card record-none">기록 없음</div>`;
-      return;
-    }
-    box.innerHTML = `
-      <div class="entry-card">
-        <div class="entry-time">${iso} (${db.time})</div>
-        <div class="entry-memo">${db.memo||""}</div>
-      </div>
-    `;
-  });
-}
-
 // 이벤트
 breakCheck.onclick = ()=> {
   breakWrap.style.display = breakCheck.checked ? "block":"none";
@@ -149,6 +142,7 @@ saveBtn.onclick = async ()=>{
   if(e < s) return alert("퇴근이 출근보다 빠를 수 없습니다.");
   const total = e-s-b;
 
+  // 저장
   await setDoc(doc(db,"worklog",iso),{
     start: startInput.value,
     end: endInput.value,
@@ -158,6 +152,10 @@ saveBtn.onclick = async ()=>{
     sec: total
   });
 
+  dayCache[iso] = {start: startInput.value, end: endInput.value, break: breakCheck.checked? breakInput.value:"", memo: memoInput.value.trim(), time: format(total), sec: total};
+
+  saveBtn.classList.add("clicked");
+  setTimeout(()=>saveBtn.classList.remove("clicked"),200);
   alert("저장되었습니다!");
   renderCalendar();
   renderSelected();
@@ -189,15 +187,6 @@ document.getElementById("nextMonth").onclick=()=>{
   calcMonthTotal();
 };
 
-// 🔹 Auth 상태 감지 후 초기화
-onAuthStateChanged(auth, user=>{
-  if(user){
-    console.log("로그인 성공:", user.email);
-    // 로그인 완료 후 달력 렌더링
-    selectDate(new Date());
-    calcMonthTotal();
-  } else {
-    // 로그인 안 된 경우 login.html로 이동
-    window.location.href = "login.html";
-  }
-});
+// 초기
+selectDate(new Date());
+calcMonthTotal();
