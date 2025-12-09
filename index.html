@@ -3,76 +3,50 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>근무 기록 로그인</title>
+<title>로그인</title>
 <style>
-  body { 
-    font-family: Pretendard, sans-serif; 
-    display:flex; 
-    justify-content:center; 
-    align-items:center; 
-    height:100vh; 
-    margin:0; 
-    background:#f5f7fa; 
-  }
-  .login-box { 
-    text-align:center; 
-    background:white; 
-    padding:40px; 
-    border-radius:12px; 
-    box-shadow:0 8px 20px rgba(0,0,0,0.1); 
-  }
-  .login-box h1 { margin-bottom:16px; }
-  .login-box p { color:#555; margin-bottom:24px; }
-  #loginBtn { 
-    background:#4285F4; 
-    color:white; 
-    border:none; 
-    padding:12px 20px; 
-    border-radius:8px; 
-    font-size:16px; 
-    cursor:pointer; 
-    transition:0.2s; 
-  }
-  #loginBtn:hover { 
-    background:#357ae8; 
-    transform:scale(1.02); 
-  }
+  body{display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f7fa;font-family:sans-serif;}
+  .login-box{background:white;padding:40px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);text-align:center;}
+  button{padding:12px 24px;border:none;border-radius:8px;background:#4285F4;color:white;font-size:16px;cursor:pointer;}
+  button:hover{background:#357ae8;}
 </style>
 </head>
 <body>
-  <div class="login-box">
-    <h1>근무 기록 앱</h1>
-    <p>Google 계정으로 로그인하세요.</p>
-    <button id="loginBtn">Google 로그인</button>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+<div class="login-box">
+  <h2>근무 기록 로그인</h2>
+  <button id="googleLogin">Google 로그인</button>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
-      authDomain: "work-3aad3.firebaseapp.com",
-      projectId: "work-3aad3",
-      storageBucket: "work-3aad3.firebasestorage.app",
-      messagingSenderId: "225615907016",
-      appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
-    };
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-    const loginBtn = document.getElementById("loginBtn");
-    loginBtn.onclick = async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        console.log("로그인 성공:", result.user.email);
-        window.location.href = "main.html";
-      } catch(err) {
-        console.error("로그인 실패:", err);
-        alert("로그인 실패! HTTPS에서 접속했는지, Firebase Web 인증 도메인이 허용되어 있는지 확인하세요.");
-      }
-    };
-  </script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCoMSY3XNJJ9jmemad545ugFVrfAM0T07M",
+  authDomain: "work-3aad3.firebaseapp.com",
+  projectId: "work-3aad3",
+  storageBucket: "work-3aad3.firebasestorage.app",
+  messagingSenderId: "225615907016",
+  appId: "1:225615907016:web:b9ccbe8331df644aa73dfd"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+document.getElementById("googleLogin").onclick = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("로그인 성공:", result.user.email);
+    // 로그인 후 main.html로 이동
+    window.location.href = "main.html";
+  } catch (err) {
+    console.error("로그인 실패:", err);
+    alert("로그인에 실패했습니다.");
+  }
+};
+</script>
+
 </body>
 </html>
