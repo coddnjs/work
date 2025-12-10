@@ -64,7 +64,7 @@ body{margin:0;background:var(--bg);color:var(--black);}
 .card{background:white;border-radius:12px;border:1px solid var(--line);padding:16px;margin-bottom: 18px;}
 .card h3{font-size:14px;font-weight:600;margin-bottom:10px;}
 
-.selected-date{font-size:15px;font-weight:700;margin-bottom:8px;color: var(--accent); /* 또는 color: #1B64DA; */}
+.selected-date{font-size:15px;font-weight:700;margin-bottom:8px;}
 
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
 .field label{font-size:12px;font-weight:500;color:#444;}
